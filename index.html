@@ -1,0 +1,3221 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Part Inspection</title>
+
+  <style>
+    /* ---------- โทนสี/ระยะห่าง/เงามาตรฐานของระบบ ---------- */
+    :root {
+      --color-bg: #f4efe9;
+      --color-surface: #ffffff;
+      --color-surface-soft: #fdfaf6;
+      --color-border: #e6d9c8;
+      --color-border-strong: #d2b48c;
+      --color-brand-dark: #4a3018;
+      --color-brand: #654321;
+      --color-brand-mid: #8b5a2b;
+      --color-brand-light: #a0522d;
+      --color-muted: #a1887f;
+      --color-fg: #2e7d32;
+      --color-ng: #c62828;
+      --color-danger: #8b0000;
+
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-sm: 6px;
+
+      --shadow-card: 0 2px 8px rgba(101, 67, 33, 0.08);
+      --shadow-card-hover: 0 8px 20px rgba(101, 67, 33, 0.14);
+      --shadow-shell: 0 10px 30px rgba(101, 67, 33, 0.16);
+
+      --space-xs: 6px;
+      --space-sm: 10px;
+      --space-md: 16px;
+      --space-lg: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--color-bg);
+      margin: 0;
+      padding: 24px 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-shell {
+      max-width: 1500px;
+      width: 100%;
+      min-height: calc(100vh - 48px);
+      margin: 0 auto;
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-shell);
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ---------- แถบด้านข้าง (Sidebar) ---------- */
+    .sidenav {
+      width: 220px;
+      flex-shrink: 0;
+      background: linear-gradient(180deg, #654321 0%, #4a3018 100%);
+      padding: 28px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sidenav .logo-container {
+      text-align: center;
+      margin-bottom: 16px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .sidenav .logo-container img {
+      max-width: 92px;
+      height: auto;
+      background: #fff;
+      border-radius: 10px;
+      padding: 8px;
+      display: block;
+      margin: 0 auto;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .sidenav .logo-container .logo-caption {
+      color: #e6d7c3;
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      margin-top: 10px;
+    }
+
+    .sidenav .logo-container .sidenav-heading {
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: bold;
+      line-height: 1.4;
+      margin-top: 8px;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      hyphens: none;
+      padding: 0 4px;
+    }
+
+    .side-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: transparent;
+      color: #e6d7c3;
+      border: 1px solid transparent;
+      padding: 13px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 14.5px;
+      font-weight: bold;
+      text-align: left;
+      width: 100%;
+      transition: 0.15s ease;
+    }
+
+    .side-nav-btn .icon {
+      font-size: 18px;
+      width: 22px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .side-nav-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    .side-nav-btn.active {
+      background: #ffffff;
+      color: var(--color-brand);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .side-nav-divider {
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      margin: 10px 0 4px;
+    }
+
+    .side-nav-section-label {
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 4px 14px 2px;
+      margin-top: 2px;
+    }
+
+    .side-nav-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    /* ---------- เนื้อหาหลัก ---------- */
+    .main-content {
+      flex: 1;
+      padding: 32px 40px;
+      min-width: 0;
+    }
+
+    .view-section.hidden {
+      display: none;
+    }
+
+    @keyframes viewFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .view-section:not(.hidden) {
+      animation: viewFadeIn 0.22s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .view-section:not(.hidden) {
+        animation: none;
+      }
+    }
+
+    h2 {
+      margin: 0 0 22px;
+      padding-bottom: 14px;
+      color: var(--color-brand);
+      text-align: center;
+      font-size: 21px;
+      letter-spacing: 0.2px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    h3 {
+      color: var(--color-brand);
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+
+    p {
+      color: var(--color-brand-mid);
+      line-height: 1.6;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px;
+      font-size: 17px;
+      letter-spacing: 0.5px;
+      border: 2px solid #d2b48c;
+      border-radius: 8px;
+      box-sizing: border-box;
+      margin-top: 10px;
+      background-color: #fdfaf6;
+      text-align: center;
+      transition: 0.2s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #8b5a2b;
+      box-shadow: 0 0 0 3px rgba(139, 90, 43, 0.15);
+    }
+
+    button {
+      background-color: var(--color-brand-mid);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+      font-weight: bold;
+      box-sizing: border-box;
+      transition: 0.15s ease;
+    }
+
+    button:hover {
+      background-color: var(--color-brand);
+      box-shadow: var(--shadow-card);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      background-color: var(--color-border-strong);
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .btn-clear {
+      background-color: #bcaaa4;
+    }
+
+    .btn-clear:hover {
+      background-color: var(--color-muted);
+    }
+
+    .btn-secondary {
+      background-color: #bcaaa4;
+      margin-top: 10px;
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--color-muted);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .status {
+      margin-top: 20px;
+      text-align: left;
+      background: #fdfaf6;
+      padding: 15px;
+      border-radius: var(--radius-md);
+      border: 1px solid #d2b48c;
+      display: none;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .filter-box {
+      background: #fdfaf6;
+      border: 1px solid #d2b48c;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+
+    .filter-field label {
+      display: block;
+      font-size: 12px;
+      color: #8b5a2b;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .filter-field select,
+    .filter-field input {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid #d2b48c;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+      background: #ffffff;
+      color: #654321;
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      grid-column: 1 / -1;
+    }
+
+    .filter-actions button {
+      width: auto;
+    }
+
+    .mini-summary {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .mini-card {
+      flex: 1;
+      min-width: 100px;
+      background: #fdfaf6;
+      border: 1px solid #e0d5c8;
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      text-align: center;
+    }
+
+    .mini-card .num {
+      font-size: 22px;
+      font-weight: bold;
+      color: #654321;
+    }
+
+    .mini-card .lbl {
+      font-size: 12px;
+      color: #8b5a2b;
+    }
+
+    .mini-card.fg .num { color: #2e7d32; }
+    .mini-card.ng .num { color: #c62828; }
+    .mini-card.no .num { color: #a1887f; }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid #e0d5c8;
+      border-radius: var(--radius-md);
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 760px;
+    }
+
+    thead th {
+      background: #8b5a2b;
+      color: #ffffff;
+      text-align: left;
+      padding: 10px 12px;
+    }
+
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #f0e6d8;
+      color: #654321;
+      vertical-align: middle;
+    }
+
+    tbody tr {
+      transition: background-color 0.15s ease;
+    }
+
+    tbody tr:hover {
+      background: #fdfaf6;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      color: white;
+    }
+
+    .badge.FG { background-color: #2e7d32; }
+    .badge.NG { background-color: #c62828; }
+    .badge.NO_DETECTION { background-color: #a1887f; }
+
+    .thumb-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    .thumb-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .thumb-cell .thumb-lbl {
+      font-size: 9px;
+      color: #a1887f;
+    }
+
+    .thumb {
+      width: 44px;
+      height: 44px;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+      border: 1px solid #d2b48c;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    .thumb:hover {
+      transform: scale(1.08);
+    }
+
+    .thumb-empty {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      border: 1px dashed #d2b48c;
+      background: #f4efe9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #d2b48c;
+      font-size: 16px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #a1887f;
+      padding: 40px 10px;
+    }
+
+    .row-count {
+      font-size: 12px;
+      color: #8b5a2b;
+      margin-bottom: 8px;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    @keyframes modalBackdropFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-overlay.show {
+      display: flex;
+      animation: modalBackdropFadeIn 0.15s ease;
+    }
+
+    .modal-overlay.show img {
+      animation: viewFadeIn 0.2s ease;
+    }
+
+    .modal-overlay img {
+      max-width: 100%;
+      max-height: 90vh;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .export-note {
+      width: 100%;
+      color: #8b5a2b;
+      font-size: 12px;
+      margin: 2px 0 0;
+    }
+
+    .dashboard-section-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 24px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e0d5c8;
+      color: #654321;
+      font-size: 16px;
+    }
+
+    .dashboard-section-heading:first-child {
+      margin-top: 0;
+    }
+
+    .top-cards {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      flex: 1;
+      min-width: 130px;
+      background: #fdfaf6;
+      border: 1px solid #e0d5c8;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 7px rgba(101, 67, 33, 0.06);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 18px rgba(101, 67, 33, 0.14);
+    }
+
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: #8b5a2b;
+    }
+
+    .stat-card.fg::before { background: #2e7d32; }
+    .stat-card.ng::before { background: #c62828; }
+    .stat-card.no::before { background: #a1887f; }
+
+    .stat-card .num {
+      font-size: 28px;
+      font-weight: bold;
+      color: #654321;
+    }
+
+    .stat-card .lbl {
+      font-size: 12px;
+      color: #8b5a2b;
+      margin-top: 4px;
+    }
+
+    .stat-card.fg .num { color: #2e7d32; }
+    .stat-card.ng .num { color: #c62828; }
+    .stat-card.no .num { color: #a1887f; }
+    .stat-card.rate .num { color: #654321; }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 700px) {
+      .chart-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-box {
+      background: #fdfaf6;
+      border: 1px solid #e0d5c8;
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .chart-box canvas {
+      max-height: 260px;
+    }
+
+    .updated-note {
+      text-align: center;
+      font-size: 12px;
+      color: #a1887f;
+      margin-top: 20px;
+    }
+
+    .badge-rate {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      color: white;
+    }
+
+    /* ---------- หน้าสแกนชิ้นงาน ---------- */
+    input[type="text"].input-error {
+      border-color: #c62828;
+      box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.12);
+    }
+
+    .scan-error {
+      display: none;
+      color: #c62828;
+      background: #fff5f5;
+      border: 1px solid #ffcccc;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 13px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .scan-hint {
+      font-size: 12px;
+      color: #a1887f;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .part-code {
+      color: #8b0000;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    details summary {
+      cursor: pointer;
+      color: #8b5a2b;
+      font-weight: bold;
+      outline: none;
+      list-style: none;
+      margin-top: 10px;
+    }
+
+    details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      background: #ffffff;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      text-align: left;
+      overflow-x: auto;
+      border: 1px solid #e0e0e0;
+      font-size: 13px;
+    }
+
+    .result-heading {
+      color: var(--color-brand);
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: var(--space-sm);
+    }
+
+    .result-overall-wrap {
+      text-align: center;
+      margin-bottom: var(--space-md);
+    }
+
+    .loading-note {
+      color: var(--color-brand-mid);
+      font-weight: bold;
+    }
+
+    .result-card {
+      border: 1px solid var(--color-border-strong);
+      padding: 14px;
+      border-radius: var(--radius-md);
+      background-color: var(--color-surface);
+      margin-bottom: 12px;
+    }
+
+    .result-card-title {
+      color: var(--color-brand-dark);
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: var(--space-sm);
+    }
+
+    .result-item-title {
+      color: var(--color-brand);
+      font-weight: bold;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .result-conf {
+      color: var(--color-brand-mid);
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .result-reason {
+      color: var(--color-muted);
+      font-size: 13px;
+      margin-top: 3px;
+      font-style: italic;
+    }
+
+    .result-empty {
+      color: var(--color-danger);
+      font-weight: bold;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .result-divider {
+      border: 0;
+      border-top: 1px dashed var(--color-border-strong);
+      margin: 10px 0;
+    }
+
+    .badge-inline {
+      display: inline-block;
+      color: white;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .badge-inline.fg { background-color: var(--color-brand-mid); }
+    .badge-inline.ng { background-color: #5c4033; }
+    .badge-inline.no { background-color: var(--color-muted); }
+
+    .ng-reason-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .ng-reason-btn {
+      width: auto;
+      flex: 1 1 auto;
+      min-width: 130px;
+      background-color: #fdfaf6;
+      color: #8b5a2b;
+      border: 1.5px solid #d2b48c;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .ng-reason-btn:hover {
+      background-color: #f4efe9;
+      color: #654321;
+      box-shadow: none;
+    }
+
+    .ng-reason-other-box {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .ng-reason-other-box input[type="text"] {
+      flex: 1;
+      min-width: 160px;
+      margin-top: 0;
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    .ng-reason-other-box button {
+      width: auto;
+      flex-shrink: 0;
+    }
+
+    .legend-box {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      background: var(--color-surface-soft);
+      font-size: 12px;
+      color: var(--color-brand-mid);
+      line-height: 1.8;
+    }
+
+    .alert-box {
+      font-size: 14px;
+      margin-top: 5px;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    .alert-box.error {
+      color: var(--color-danger);
+      background: #fff5f5;
+      border: 1px solid #ffcccc;
+    }
+
+    .alert-title {
+      color: var(--color-danger);
+      font-weight: bold;
+    }
+
+    .capture-slots {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 760px) {
+      .capture-slots {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .capture-slot {
+      border: 1px solid #e0d5c8;
+      border-radius: 10px;
+      padding: 14px;
+      background: #fdfaf6;
+      text-align: center;
+    }
+
+    .capture-slot.done {
+      border-color: #2e7d32;
+      background: #f3f9f3;
+    }
+
+    .capture-slot .slot-title {
+      font-weight: bold;
+      color: #654321;
+      font-size: 14px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .capture-slot .slot-required {
+      color: #c62828;
+      font-size: 11px;
+      font-weight: normal;
+    }
+
+    .capture-slot .slot-optional {
+      color: #a1887f;
+      font-size: 11px;
+      font-weight: normal;
+    }
+
+    .capture-slot .slot-check {
+      color: #2e7d32;
+      font-size: 15px;
+      display: none;
+    }
+
+    .capture-slot.done .slot-check {
+      display: inline;
+    }
+
+    .capture-slot .slot-preview {
+      max-width: 100%;
+      max-height: 160px;
+      border-radius: 6px;
+      display: none;
+      margin: 10px auto 4px;
+      border: 1px dashed #d2b48c;
+      padding: 3px;
+      background: #fff;
+    }
+
+    .capture-slot .slot-btn-group {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .capture-slot .slot-upload {
+      flex: 1;
+      min-width: 0;
+      background-color: #a0522d;
+      color: white;
+      border: none;
+      padding: 9px 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12.5px;
+      font-weight: bold;
+      display: inline-block;
+      box-sizing: border-box;
+      text-align: center;
+      transition: 0.2s;
+    }
+
+    .capture-slot .slot-upload:hover {
+      background-color: #8b5a2b;
+    }
+
+    .capture-slot .slot-upload.slot-camera {
+      background-color: #654321;
+    }
+
+    .capture-slot .slot-upload.slot-camera:hover {
+      background-color: #4a3018;
+    }
+
+    .capture-slot .slot-reset {
+      width: 100%;
+      margin-top: 6px;
+      background-color: #bcaaa4;
+      font-size: 12px;
+      padding: 7px;
+      display: none;
+    }
+
+    .capture-slot .slot-reset:hover {
+      background-color: #a1887f;
+    }
+
+    .result-images {
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .result-images.show {
+      display: grid;
+    }
+
+    @media (max-width: 760px) {
+      .result-images {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .result-image-frame {
+      display: none;
+      border: 1px solid #e0d5c8;
+      border-radius: 10px;
+      padding: 14px;
+      background: #fdfaf6;
+      text-align: center;
+    }
+
+    .result-image-frame.show {
+      display: block;
+    }
+
+    .result-image-frame .result-image-label {
+      font-weight: bold;
+      color: #654321;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .result-image-frame canvas {
+      max-width: 100%;
+      max-height: 320px;
+      border-radius: 6px;
+      border: 1px solid #d2b48c;
+      background: #fff;
+    }
+
+    /* ---------- Camera-first: เน้นการถ่ายภาพผ่าน iPad ---------- */
+    .capture-slot {
+      position: relative;
+    }
+
+    .capture-slot .slot-btn-group {
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .capture-slot .slot-upload.slot-camera {
+      order: 1;
+      min-height: 58px;
+      font-size: 17px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      touch-action: manipulation;
+    }
+
+    .capture-slot .slot-upload:not(.slot-camera) {
+      order: 2;
+      min-height: 44px;
+      font-size: 13px;
+      opacity: 0.85;
+    }
+
+    .capture-slot .slot-preview {
+      width: 100%;
+      max-height: 280px;
+      object-fit: contain;
+    }
+
+    /* บนอุปกรณ์สัมผัส ให้ปุ่มถ่ายรูปเด่นและกดง่าย */
+    @media (pointer: coarse) {
+      button,
+      .slot-upload,
+      .side-nav-btn {
+        min-height: 50px;
+      }
+
+      .capture-slot .slot-upload.slot-camera {
+        min-height: 64px;
+        font-size: 18px;
+      }
+
+      .capture-slot .slot-upload:not(.slot-camera) {
+        min-height: 48px;
+      }
+
+      .capture-slot .slot-reset {
+        min-height: 44px;
+      }
+    }
+
+    /* ---------- Responsive: ระดับ iPad (แท็บเล็ต ~761–1180px ทั้งแนวตั้ง/แนวนอน) ---------- */
+    @media (min-width: 761px) and (max-width: 1180px) {
+      body {
+        padding: 16px 10px;
+      }
+
+      .app-shell {
+        max-width: 100%;
+        border-radius: 14px;
+      }
+
+      .sidenav {
+        width: 190px;
+        padding: 22px 14px;
+      }
+
+      .main-content {
+        padding: 22px 24px;
+      }
+
+      h2 {
+        font-size: 22px;
+      }
+
+      button,
+      .side-nav-btn {
+        min-height: 46px;
+        font-size: 15.5px;
+      }
+
+      input[type="text"] {
+        font-size: 18px;
+        padding: 16px;
+        min-height: 52px;
+      }
+
+      .filter-field select,
+      .filter-field input {
+        min-height: 42px;
+        font-size: 15px;
+      }
+
+      .thumb,
+      .thumb-empty {
+        width: 52px;
+        height: 52px;
+      }
+    }
+
+    /* ---------- Responsive: sidebar -> top bar บนจอเล็ก ---------- */
+    @media (max-width: 760px) {
+      .app-shell {
+        flex-direction: column;
+      }
+
+      .sidenav {
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        overflow-x: auto;
+        padding: 14px 12px;
+        gap: 8px;
+      }
+
+      .sidenav .logo-container {
+        margin-bottom: 0;
+        margin-right: 6px;
+      }
+
+      .sidenav .logo-container img {
+        max-width: 44px;
+        padding: 4px;
+      }
+
+      .sidenav .logo-container .sidenav-heading,
+      .sidenav .logo-container .logo-caption {
+        display: none;
+      }
+
+      .side-nav-btn {
+        width: auto;
+        white-space: nowrap;
+      }
+
+      .side-nav-divider {
+        width: 1px;
+        height: 28px;
+        border-top: none;
+        border-left: 1px solid rgba(255, 255, 255, 0.14);
+        margin: 0 4px;
+        flex-shrink: 0;
+      }
+
+      .side-nav-section-label {
+        display: none;
+      }
+
+      .main-content {
+        padding: 20px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-shell">
+
+    <!-- ================= แถบเมนูด้านข้าง ================= -->
+    <div class="sidenav">
+      <div class="logo-container">
+        <img src="https://media.jobthai.com/v1/images/logo-pic-map/155272_logo_20201027095622.png?type=webp&width=256&quality=90" alt="Company Logo">
+        <div class="logo-caption">IPACK Logistics</div>
+        <div class="sidenav-heading">ระบบตรวจสอบคุณภาพชิ้นงาน</div>
+      </div>
+
+      <div class="side-nav-section-label">เมนูหลัก</div>
+      <button type="button" class="side-nav-btn active" id="navTab_scan" onclick="showView('scan')">
+        <span class="icon">📷</span><span>สแกนชิ้นงาน</span>
+      </button>
+      <button type="button" class="side-nav-btn" id="navTab_summary" onclick="showView('summary')">
+        <span class="icon">📈</span><span>แดชบอร์ด</span>
+      </button>
+      <button type="button" class="side-nav-btn" id="navTab_records" onclick="showView('records')">
+        <span class="icon">📋</span><span>ข้อมูลชิ้นงาน</span>
+      </button>
+
+      <div class="side-nav-divider"></div>
+
+      <div class="side-nav-section-label">จัดการ/นำออก</div>
+      <button type="button" class="side-nav-btn" id="navTab_exportExcel" onclick="showView('exportExcel')">
+        <span class="icon">📊</span><span>Export Excel</span>
+      </button>
+      <button type="button" class="side-nav-btn" id="navTab_backup" onclick="showView('backup')">
+        <span class="icon">🗄️</span><span>สำรอง/กู้คืนข้อมูล</span>
+      </button>
+    </div>
+
+    <!-- ================= เนื้อหาหลัก ================= -->
+    <div class="main-content">
+
+      <!-- ================= หน้า: สแกนชิ้นงาน ================= -->
+      <div class="view-section" id="viewScan">
+
+        <div id="page1">
+          <h2>สแกนรหัสพาร์ท</h2>
+          <input type="text" id="txtScan" placeholder="กำลังโหลดรายชื่อพาร์ท..." disabled autofocus />
+          <div class="scan-error" id="scanError"></div>
+          <div class="scan-hint">สแกนบาร์โค้ด หรือพิมพ์รหัสพาร์ทแล้วกด Enter</div>
+        </div>
+
+        <div id="page2" class="hidden">
+          <h2>Step 2: ถ่ายภาพด้วย iPad</h2>
+          <p style="text-align: left; font-weight: bold;">
+            พาร์ทที่กำลังตรวจสอบ:
+            <span class="part-code" id="currentPartLabel"></span>
+          </p>
+          <div class="scan-hint" style="margin-bottom:10px;"><strong>ระบบจะปรับขนาดและแสงของภาพอัตโนมัติก่อนส่ง AI</strong><br>
+            แนะนำให้กด <strong>“เปิดกล้อง iPad เพื่อถ่ายภาพ”</strong> เป็นหลัก
+            และถ่ายในบริเวณที่มีแสงเพียงพอ
+          </div>
+
+          <div class="capture-slots">
+            <div class="capture-slot" id="slotFront">
+              <div class="slot-title">1. ถ่ายด้านหน้า <span class="slot-required">*จำเป็น</span> <span class="slot-check">✓</span></div>
+              <img class="slot-preview" id="previewFront" alt="รูปด้านหน้า">
+              <div class="slot-btn-group">
+                <label class="slot-upload slot-camera">
+                  📷 เปิดกล้อง iPad เพื่อถ่ายภาพ
+                  <input type="file" id="cameraFront" accept="image/*" capture="environment" style="display:none;">
+                </label>
+                <label class="slot-upload">
+                  📁 เลือกรูปจากคลัง (สำรอง)
+                  <input type="file" id="fileFront" accept="image/*" style="display:none;">
+                </label>
+              </div>
+              <button class="slot-reset" id="resetFront">ล้างรูป</button>
+            </div>
+
+            <div class="capture-slot" id="slotBarcode">
+              <div class="slot-title">2. ถ่าย QR/บาร์โค้ด <span class="slot-optional">(ไม่บังคับ — ใส่ได้ถ้ามี)</span> <span class="slot-check">✓</span></div>
+              <img class="slot-preview" id="previewBarcode" alt="รูปบาร์โค้ด/QR">
+              <div class="slot-btn-group">
+                <label class="slot-upload slot-camera">
+                  📷 เปิดกล้อง iPad เพื่อถ่ายภาพ
+                  <input type="file" id="cameraBarcode" accept="image/*" capture="environment" style="display:none;">
+                </label>
+                <label class="slot-upload">
+                  📁 เลือกรูปจากคลัง (สำรอง)
+                  <input type="file" id="fileBarcode" accept="image/*" style="display:none;">
+                </label>
+              </div>
+              <button class="slot-reset" id="resetBarcode">ล้างรูป</button>
+            </div>
+          </div>
+
+          <div class="result-images" id="resultImages">
+            <div class="result-image-frame" id="resultFrameFront">
+              <div class="result-image-label">📍 ด้านหน้า (พร้อมกรอบตรวจจับ)</div>
+              <canvas id="resultCanvasFront"></canvas>
+            </div>
+            <div class="result-image-frame" id="resultFrameBarcode">
+              <div class="result-image-label">📍 QR/บาร์โค้ด (พร้อมกรอบตรวจจับ)</div>
+              <canvas id="resultCanvasBarcode"></canvas>
+            </div>
+          </div>
+
+          <button id="btnAnalyze" style="margin-top: 18px;">ส่งวิเคราะห์ไปยัง Roboflow</button>
+          <button id="btnBack" class="btn-secondary" style="margin-top: 10px;">‹ กลับไปสแกนใหม่</button>
+
+          <div class="scan-hint" style="margin-top:10px;">เกณฑ์ผ่าน: <strong>Confidence ≥ 80%</strong></div>
+          <div id="statusResult" class="status"></div>
+        </div>
+      </div>
+
+      <!-- ================= หน้า: สรุปผลทั้งหมด / แดชบอร์ด ================= -->
+      <div class="view-section hidden" id="viewSummary">
+        <h2>สรุปผลการตรวจสอบทั้งหมด</h2>
+
+        <div class="filter-box">
+          <div class="filter-field">
+            <label for="sumFrom">วันที่ (จาก)</label>
+            <input type="date" id="sumFrom" />
+          </div>
+
+          <div class="filter-field">
+            <label for="sumTo">วันที่ (ถึง)</label>
+            <input type="date" id="sumTo" />
+          </div>
+
+          <div class="filter-actions">
+            <button id="btnSumApply">กรองข้อมูล</button>
+            <button id="btnSumClear" class="btn-clear">ล้างตัวกรอง (แสดงทั้งหมด)</button>
+          </div>
+        </div>
+
+        <div id="summaryContent">
+          <div class="empty-state">กำลังโหลดข้อมูล...</div>
+        </div>
+
+        <div class="updated-note" id="updatedNote"></div>
+      </div>
+
+      <!-- ================= หน้า: ข้อมูลชิ้นงาน / ตัวกรอง ================= -->
+      <div class="view-section hidden" id="viewRecords">
+        <h2>ข้อมูลชิ้นงาน</h2>
+
+        <div class="filter-box">
+          <div class="filter-field">
+            <label for="fltPart">รหัสพาร์ท</label>
+            <select id="fltPart">
+              <option value="">ทั้งหมด</option>
+            </select>
+          </div>
+
+          <div class="filter-field">
+            <label for="fltStatus">สถานะ</label>
+            <select id="fltStatus">
+              <option value="">ทั้งหมด</option>
+              <option value="FG">FG</option>
+              <option value="NG">NG</option>
+              <option value="NO_DETECTION">ไม่พบชิ้นส่วน</option>
+            </select>
+          </div>
+
+          <div class="filter-field">
+            <label for="fltFrom">วันที่ (จาก)</label>
+            <input type="date" id="fltFrom" />
+          </div>
+
+          <div class="filter-field">
+            <label for="fltTo">วันที่ (ถึง)</label>
+            <input type="date" id="fltTo" />
+          </div>
+
+          <div class="filter-field">
+            <label for="fltSearch">ค้นหา (รหัสพาร์ท/วันเวลา)</label>
+            <input type="text" id="fltSearch" placeholder="พิมพ์เพื่อค้นหา..." />
+          </div>
+
+          <div class="filter-actions">
+            <button id="btnApply">กรองข้อมูล</button>
+            <button id="btnClear" class="btn-clear">ล้างตัวกรอง</button>
+          </div>
+        </div>
+
+        <div class="mini-summary" id="miniSummary"></div>
+
+        <div class="row-count" id="rowCount"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>วันที่ - เวลา</th>
+                <th>รหัสพาร์ท</th>
+                <th>จำนวนที่ตรวจเจอ</th>
+                <th>FG</th>
+                <th>NG</th>
+                <th>สถานะรวม</th>
+                <th>สาเหตุ NG</th>
+                <th>รูปภาพ (หน้า / บาร์โค้ด)</th>
+              </tr>
+            </thead>
+            <tbody id="tblBody">
+              <tr><td colspan="8" class="empty-state">กำลังโหลดข้อมูล...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ================= หน้า: Export Excel ================= -->
+      <div class="view-section hidden" id="viewExportExcel">
+        <h2>Export ข้อมูลเป็น Excel</h2>
+
+        <div class="filter-box">
+          <div class="filter-field">
+            <label for="xlsPart">รหัสพาร์ท</label>
+            <select id="xlsPart">
+              <option value="">ทั้งหมด</option>
+            </select>
+          </div>
+
+          <div class="filter-field">
+            <label for="xlsStatus">สถานะ</label>
+            <select id="xlsStatus">
+              <option value="">ทั้งหมด</option>
+              <option value="FG">FG</option>
+              <option value="NG">NG</option>
+              <option value="NO_DETECTION">ไม่พบชิ้นส่วน</option>
+            </select>
+          </div>
+
+          <div class="filter-field">
+            <label for="xlsFrom">วันที่ (จาก)</label>
+            <input type="date" id="xlsFrom" />
+          </div>
+
+          <div class="filter-field">
+            <label for="xlsTo">วันที่ (ถึง)</label>
+            <input type="date" id="xlsTo" />
+          </div>
+
+          <div class="filter-actions">
+            <button type="button" id="btnGenerateExcel">📊 สร้างไฟล์ Excel</button>
+            <span id="excelGenerateStatus" style="font-size:13px; margin-left:10px;"></span>
+          </div>
+          <p class="export-note">แถวหัวตาราง (แถวแรก) จะถูกตรึงไว้ (Freeze Panes) ในไฟล์ที่สร้าง เพื่อให้เลื่อนดูข้อมูลจำนวนมากได้สะดวก</p>
+        </div>
+      </div>
+
+      <!-- ================= หน้า: สำรอง/กู้คืนข้อมูล ================= -->
+      <div class="view-section hidden" id="viewBackup">
+        <h2>สำรอง/กู้คืนข้อมูล</h2>
+        <p style="text-align:center; margin-top:-10px; font-size:13px;">
+          สำหรับป้องกันข้อมูลหาย กรณี hosting ล้าง/รีเซ็ตไฟล์เป็นระยะ (พบได้บ่อยกับ free hosting) —
+          แนะนำให้ดาวน์โหลดไฟล์สำรองเก็บไว้เป็นประจำ (เช่น ทุกสัปดาห์)
+        </p>
+
+        <h3 class="dashboard-section-heading">ดาวน์โหลดไฟล์สำรอง</h3>
+        <p>รวมข้อมูลทั้งหมดของระบบไว้ในไฟล์ ZIP ไฟล์เดียว ได้แก่ ประวัติการตรวจสอบ, รายชื่อพาร์ท,
+          รูปตัวอย่าง (Material), ค่าตั้งค่าระบบ, และรูปภาพทั้งหมด (รูปสแกน/รูปตัวอย่าง/รูปเทรนบาร์โค้ด)</p>
+        <button type="button" id="btnDownloadBackup" style="max-width:280px;">💾 ดาวน์โหลดไฟล์สำรอง (ZIP)</button>
+
+        <h3 class="dashboard-section-heading" style="margin-top:32px;">กู้คืนข้อมูลจากไฟล์สำรอง</h3>
+        <div class="alert-box error" style="margin-bottom:16px; color:#8b0000; background:#fff5f5; border:1px solid #ffcccc; padding:10px; border-radius:6px;">
+          <strong>⚠️ คำเตือน:</strong> การกู้คืนจะเขียนทับข้อมูล/รูปปัจจุบันที่ชื่อซ้ำกับในไฟล์สำรองทันที
+          ไม่สามารถย้อนกลับได้ ควรใช้เฉพาะกรณีข้อมูลบนเซิร์ฟเวอร์หายไปจริงๆ เท่านั้น
+        </div>
+        <input type="file" id="restoreFileInput" accept=".zip,application/zip" style="text-align:left; padding:12px 16px;">
+        <button type="button" id="btnRestoreBackup" class="btn-secondary" style="max-width:280px; margin-top:12px;">📤 กู้คืนข้อมูลจากไฟล์นี้</button>
+        <div id="restoreStatus" style="margin-top:12px; font-size:13px;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="imgModal">
+    <img id="modalImg" src="" alt="รูปภาพเต็ม">
+  </div>
+
+  <script>
+    /* =========================================================
+       ตัวสลับแท็บหลัก (แดชบอร์ด / ข้อมูลชิ้นงาน / Export Excel / สำรองข้อมูล)
+       ========================================================= */
+    function showView(viewName) {
+      document.querySelectorAll(".view-section").forEach(el => el.classList.add("hidden"));
+      document.getElementById("view" + viewName.charAt(0).toUpperCase() + viewName.slice(1)).classList.remove("hidden");
+
+      document.querySelectorAll(".side-nav-btn").forEach(el => el.classList.remove("active"));
+      document.getElementById("navTab_" + viewName).classList.add("active");
+
+      if (viewName === "records") loadRecordsData();
+      if (viewName === "summary") loadSummaryData();
+      if (viewName === "exportExcel") loadExportExcelView();
+    }
+
+    /* =========================================================
+       Helper: บังคับให้ "เวลาปัจจุบัน" ที่แสดง/คำนวณในหน้าเว็บทั้งหมดเป็นเวลาประเทศไทย
+       (Asia/Bangkok, UTC+7) เสมอ ไม่ว่าเครื่อง/เบราว์เซอร์ของผู้ใช้จะตั้ง timezone เป็นอะไร
+       ========================================================= */
+    const TH_TIMEZONE = "Asia/Bangkok";
+
+    function getThaiDateTimeParts() {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: TH_TIMEZONE,
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+        hourCycle: "h23"
+      }).formatToParts(new Date());
+      const get = type => parseInt(parts.find(p => p.type === type).value, 10);
+      return {
+        year: get("year"), month: get("month"), day: get("day"),
+        hour: get("hour"), minute: get("minute"), second: get("second")
+      };
+    }
+
+    function getTodayThaiDateString() {
+      const p = getThaiDateTimeParts();
+      return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+    }
+
+    function formatThaiNow() {
+      return new Date().toLocaleString("th-TH", { timeZone: TH_TIMEZONE });
+    }
+
+    // รายการสาเหตุ NG (ใช้แสดงผลในตาราง/รายงานเท่านั้น — รหัสต้องตรงกับฝั่ง proxy.php)
+    const NG_REASONS = [
+      { value: "real_defect", label: "ชิ้นงานมีตำหนิจริง" },
+      { value: "blurry_photo", label: "ถ่ายภาพไม่ชัด/เบลอ" },
+      { value: "poor_lighting", label: "แสงไม่พอ" },
+      { value: "bad_angle", label: "มุม/ระยะถ่ายไม่เหมาะสม" },
+      { value: "other", label: "อื่นๆ" }
+    ];
+
+    function ngReasonLabel(value, note) {
+      const found = NG_REASONS.find(r => r.value === value);
+      const label = found ? found.label : value;
+      return note ? `${label} — ${note}` : label;
+    }
+
+    // แปลงสถานะข้อมูลเก่า OK -> FG เพื่อให้ข้อมูลเดิมยังแสดงผล/กรอง/สรุปได้ถูกต้อง
+    function normalizeInspectionStatus(status) {
+      if (status === "OK") return "FG";
+      if (status === "FG" || status === "NG" || status === "NO_DETECTION") return status;
+      return status || "NO_DETECTION";
+    }
+
+
+    /*
+     * =========================================================
+     * iPad Camera Image Preprocessing
+     * ถ่ายภาพ -> หมุนตาม EXIF/Orientation -> ปรับขนาด -> ปรับแสง
+     * -> ปรับความคมเล็กน้อย -> JPEG คุณภาพสูง -> ส่ง AI
+     *
+     * เป้าหมาย: ทำให้ภาพจากกล้อง iPad มีรูปแบบใกล้เคียงกับ
+     * ภาพที่เลือกจากคลัง และลดความแตกต่างของภาพก่อนส่ง AI
+     * =========================================================
+     */
+    async function preprocessImageForAI(file, options = {}) {
+      const maxSide = options.maxSide || 1600;
+      const jpegQuality = options.jpegQuality || 0.92;
+
+      const bitmap = await createImageBitmap(file, {
+        imageOrientation: "from-image"
+      }).catch(() => null);
+
+      let img;
+      let width;
+      let height;
+
+      if (bitmap) {
+        img = bitmap;
+        width = bitmap.width;
+        height = bitmap.height;
+      } else {
+        const url = URL.createObjectURL(file);
+        try {
+          img = await new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = reject;
+            image.src = url;
+          });
+          width = img.naturalWidth;
+          height = img.naturalHeight;
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      }
+
+      const scale = Math.min(1, maxSide / Math.max(width, height));
+      const outW = Math.max(1, Math.round(width * scale));
+      const outH = Math.max(1, Math.round(height * scale));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = outW;
+      canvas.height = outH;
+
+      const ctx = canvas.getContext("2d", { alpha: false });
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+
+      ctx.drawImage(img, 0, 0, outW, outH);
+
+      // ปรับภาพแบบเบา ๆ เพื่อให้ภาพจากกล้องสม่ำเสมอขึ้น
+      // ไม่ทำ aggressive enhancement เพราะอาจทำให้รายละเอียดชิ้นงานเปลี่ยน
+      const imageData = ctx.getImageData(0, 0, outW, outH);
+      const d = imageData.data;
+
+      let sum = 0;
+      let count = 0;
+
+      // ประเมินความสว่างจากทุก ๆ 8 พิกเซล เพื่อลดภาระ CPU บน iPad
+      for (let i = 0; i < d.length; i += 32) {
+        sum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        count++;
+      }
+
+      const avg = count ? sum / count : 128;
+
+      // จำกัดการชดเชยแสงไม่ให้แรงเกินไป
+      let gain = 1;
+      if (avg < 75) gain = 1.10;
+      else if (avg < 100) gain = 1.06;
+      else if (avg > 205) gain = 0.96;
+
+      if (gain !== 1) {
+        for (let i = 0; i < d.length; i += 4) {
+          d[i]     = Math.min(255, Math.max(0, d[i] * gain));
+          d[i + 1] = Math.min(255, Math.max(0, d[i + 1] * gain));
+          d[i + 2] = Math.min(255, Math.max(0, d[i + 2] * gain));
+        }
+        ctx.putImageData(imageData, 0, 0);
+      }
+
+      if (bitmap && bitmap.close) bitmap.close();
+
+      const blob = await new Promise(resolve =>
+        canvas.toBlob(resolve, "image/jpeg", jpegQuality)
+      );
+
+      if (!blob) throw new Error("ไม่สามารถประมวลผลภาพได้");
+
+      return new File(
+        [blob],
+        (file.name || "ipad-camera") + ".jpg",
+        { type: "image/jpeg", lastModified: Date.now() }
+      );
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("อ่านไฟล์ไม่สำเร็จ"));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    /* =========================================================
+       ส่วนที่ 0: สแกนชิ้นงาน + วิเคราะห์รูป
+       ========================================================= */
+    let PARTS = [];
+    let EXPECTED_CLASS = {};
+    let partsReadyPromise = null;
+
+    // เกณฑ์ความมั่นใจขั้นต่ำที่ถือว่า "ผ่าน (FG)" — ใช้เฉพาะฝั่งแสดงผล (สีกรอบ/ป้าย FG-NG
+    // ทันทีหลังวิเคราะห์) ส่วนสถานะ FG/NG ที่บันทึกจริงคำนวณจากเซิร์ฟเวอร์เสมอ (ดู proxy.php)
+    let CONFIDENCE_THRESHOLD = 0.80;
+
+    let isAnalyzing = false;
+    let currentPartCode = null;
+
+    // เกณฑ์ความมั่นใจของ AI: ต้องไม่น้อยกว่า 70%
+    const AI_CONFIDENCE_THRESHOLD = 0.70;
+
+    const page1 = document.getElementById("page1");
+    const page2 = document.getElementById("page2");
+    const txtScan = document.getElementById("txtScan");
+    const scanError = document.getElementById("scanError");
+    const btnAnalyze = document.getElementById("btnAnalyze");
+    const btnBack = document.getElementById("btnBack");
+    const statusDiv = document.getElementById("statusResult");
+    const currentPartLabel = document.getElementById("currentPartLabel");
+
+    async function loadPartsFromServer() {
+      const res = await fetch('proxy.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'get_parts' })
+      });
+      const rawText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch (e) {
+        throw new Error("เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON ตอนโหลดรายชื่อพาร์ท");
+      }
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "โหลดรายชื่อพาร์ทไม่สำเร็จ");
+      }
+
+      const list = Array.isArray(data.parts) ? data.parts : [];
+      PARTS = list.map(p => p.code).sort();
+      EXPECTED_CLASS = Object.fromEntries(PARTS.map(code => [code, code]));
+      return list;
+    }
+
+    async function loadSettingsFromServer() {
+      const res = await fetch('proxy.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'get_settings' })
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "โหลดค่าตั้งค่าไม่สำเร็จ");
+      }
+      if (data.settings && typeof data.settings.confidence_threshold === "number") {
+        CONFIDENCE_THRESHOLD = data.settings.confidence_threshold;
+      }
+      return data.settings;
+    }
+
+    partsReadyPromise = Promise.all([
+      loadPartsFromServer(),
+      loadSettingsFromServer().catch(err => {
+        console.warn("โหลดค่าตั้งค่าไม่สำเร็จ (ใช้ค่าเริ่มต้น 80% ต่อไป):", err);
+      })
+    ]).then(() => {
+      txtScan.disabled = false;
+      txtScan.placeholder = "สแกนที่นี่...";
+      txtScan.focus();
+    }).catch(err => {
+      console.error("โหลดรายชื่อพาร์ทไม่สำเร็จ:", err);
+      showScanError("โหลดรายชื่อพาร์ทจากเซิร์ฟเวอร์ไม่สำเร็จ: " + err.message + " — กรุณารีเฟรชหน้านี้ใหม่");
+    });
+
+    const SLOTS = {
+      front: {
+        file: null,
+        camera: document.getElementById("cameraFront"),
+        upload: document.getElementById("fileFront"),
+        preview: document.getElementById("previewFront"),
+        reset: document.getElementById("resetFront"),
+        slotEl: document.getElementById("slotFront"),
+        label: "ด้านหน้า"
+      },
+      barcode: {
+        file: null,
+        camera: document.getElementById("cameraBarcode"),
+        upload: document.getElementById("fileBarcode"),
+        preview: document.getElementById("previewBarcode"),
+        reset: document.getElementById("resetBarcode"),
+        slotEl: document.getElementById("slotBarcode"),
+        label: "QR/บาร์โค้ด"
+      }
+    };
+
+    function setupSlot(key) {
+      const slot = SLOTS[key];
+
+      function handleSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+          alert("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
+          return;
+        }
+
+        slot.file = file;
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          slot.preview.src = event.target.result;
+          slot.preview.style.display = "block";
+          slot.reset.style.display = "block";
+          slot.slotEl.classList.add("done");
+          statusDiv.style.display = "none";
+          statusDiv.innerHTML = "";
+        };
+        reader.readAsDataURL(file);
+      }
+
+      slot.camera.addEventListener("change", handleSelect);
+      slot.upload.addEventListener("change", handleSelect);
+
+      slot.reset.addEventListener("click", function () {
+        resetSlot(key);
+      });
+    }
+
+    function resetSlot(key) {
+      const slot = SLOTS[key];
+      slot.file = null;
+      slot.preview.src = "";
+      slot.preview.style.display = "none";
+      slot.reset.style.display = "none";
+      slot.camera.value = "";
+      slot.upload.value = "";
+      slot.slotEl.classList.remove("done");
+    }
+
+    function resetAllSlots() {
+      Object.keys(SLOTS).forEach(resetSlot);
+      document.getElementById("resultFrameFront").classList.remove("show");
+      document.getElementById("resultFrameBarcode").classList.remove("show");
+      document.getElementById("resultImages").classList.remove("show");
+    }
+
+    Object.keys(SLOTS).forEach(setupSlot);
+
+    function findPartCode(inputRaw) {
+      const input = (inputRaw || "").trim().toUpperCase();
+      if (!input) return null;
+      return PARTS.find(code => code.toUpperCase() === input) || null;
+    }
+
+    function showScanError(msg) {
+      scanError.textContent = msg;
+      scanError.style.display = "block";
+      txtScan.classList.add("input-error");
+    }
+
+    function clearScanError() {
+      scanError.style.display = "none";
+      scanError.textContent = "";
+      txtScan.classList.remove("input-error");
+    }
+
+    function goToImageStep(partCode) {
+      currentPartCode = partCode;
+      currentPartLabel.textContent = partCode;
+      page1.classList.add("hidden");
+      page2.classList.remove("hidden");
+    }
+
+    txtScan.addEventListener("input", clearScanError);
+
+    txtScan.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        const rawValue = this.value;
+        const matchedCode = findPartCode(rawValue);
+        if (matchedCode) {
+          clearScanError();
+          this.value = "";
+          goToImageStep(matchedCode);
+        } else {
+          showScanError(`ไม่พบรหัสพาร์ท "${rawValue.trim()}" ในระบบ กรุณาตรวจสอบรหัสอีกครั้ง`);
+        }
+      }
+    });
+
+    btnBack.addEventListener("click", function () {
+      resetAllSlots();
+      statusDiv.style.display = "none";
+      statusDiv.innerHTML = "";
+      currentPartCode = null;
+      page2.classList.add("hidden");
+      page1.classList.remove("hidden");
+      clearScanError();
+      txtScan.value = "";
+      txtScan.focus();
+    });
+
+    function showStatusHtml(htmlContent) {
+      statusDiv.style.display = "block";
+      statusDiv.innerHTML = htmlContent;
+    }
+
+    // เสียงแจ้งเตือนผลตรวจ (FG / NG / NO_DETECTION) — สร้างเองด้วย Web Audio API ไม่พึ่งไฟล์เสียง
+    let resultAudioCtx = null;
+
+    function getResultAudioContext() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+
+      if (!resultAudioCtx) {
+        resultAudioCtx = new AudioContextClass();
+      }
+      if (resultAudioCtx.state === "suspended") {
+        resultAudioCtx.resume().catch(() => {});
+      }
+      return resultAudioCtx;
+    }
+
+    function playBeep(frequency, durationMs, startDelayMs = 0) {
+      const ctx = getResultAudioContext();
+      if (!ctx) return;
+
+      const startTime = ctx.currentTime + startDelayMs / 1000;
+      const durationSec = durationMs / 1000;
+
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency;
+
+      gainNode.gain.setValueAtTime(0.0001, startTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.35, startTime + 0.015);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + durationSec);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      oscillator.start(startTime);
+      oscillator.stop(startTime + durationSec + 0.02);
+    }
+
+    function playResultSound(status) {
+      if (status === "FG") {
+        playBeep(880, 150);
+      } else if (status === "NG") {
+        playBeep(330, 350, 0);
+        playBeep(330, 350, 450);
+      } else {
+        playBeep(550, 120);
+      }
+    }
+
+    // เลือก/บันทึกสาเหตุ NG — แสดงหลังผลตรวจออกเป็น NG เท่านั้น
+    function selectNgReason(recordId, reason) {
+      const optionsEl = document.getElementById("ngReasonOptions");
+      if (!optionsEl) return;
+
+      if (reason === "other") {
+        optionsEl.innerHTML = `
+          <div class="ng-reason-other-box">
+            <input type="text" id="ngReasonOtherText" placeholder="ระบุสาเหตุอื่นๆ..." maxlength="300">
+            <button type="button" onclick="submitNgReason(${recordId}, 'other', document.getElementById('ngReasonOtherText').value)">บันทึก</button>
+          </div>
+        `;
+        document.getElementById("ngReasonOtherText").focus();
+        return;
+      }
+
+      submitNgReason(recordId, reason, "");
+    }
+
+    async function submitNgReason(recordId, reason, note) {
+      const statusEl = document.getElementById("ngReasonStatus");
+      const optionsEl = document.getElementById("ngReasonOptions");
+      if (statusEl) statusEl.textContent = "กำลังบันทึก...";
+
+      try {
+        const res = await fetch('proxy.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'update_ng_reason',
+            part: currentPartCode || '',
+            id: recordId,
+            reason: reason,
+            reason_note: note || ""
+          })
+        });
+        const rawText = await res.text();
+        let data;
+        try {
+          data = JSON.parse(rawText);
+        } catch (e) {
+          throw new Error("เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON");
+        }
+        if (!res.ok || data.error) {
+          throw new Error(data.error || "บันทึกไม่สำเร็จ");
+        }
+
+        if (optionsEl) optionsEl.innerHTML = "";
+        if (statusEl) {
+          statusEl.innerHTML = `✅ บันทึกสาเหตุแล้ว: <strong>${ngReasonLabel(reason, note)}</strong>`;
+        }
+      } catch (err) {
+        console.error("บันทึกสาเหตุ NG ไม่สำเร็จ:", err);
+        if (statusEl) statusEl.innerHTML = `❌ บันทึกไม่สำเร็จ: ${err.message} — <a href="#" onclick="selectNgReason(${recordId}, '${reason}'); return false;">ลองใหม่</a>`;
+      }
+    }
+
+    function normalizeClassCode(str) {
+      return (str || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    }
+
+    function drawDetectionBoxes(canvasId, imageDataUrl, predictions, expectedClassUpper) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+
+      img.onload = function () {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+
+        const lineWidth = Math.max(3, canvas.width / 220);
+        const fontSize = Math.max(16, canvas.width / 35);
+        ctx.font = `bold ${fontSize}px Arial`;
+        ctx.textBaseline = "bottom";
+
+        (predictions || []).forEach(function (pred) {
+          if (
+            typeof pred.x !== "number" || typeof pred.y !== "number" ||
+            typeof pred.width !== "number" || typeof pred.height !== "number"
+          ) {
+            return;
+          }
+
+          const boxX = pred.x - pred.width / 2;
+          const boxY = pred.y - pred.height / 2;
+          const detectedClass = (pred.class || "ไม่ทราบชื่อ").trim();
+          const isMatch = normalizeClassCode(detectedClass) === normalizeClassCode(expectedClassUpper);
+          const confPercent = Math.round((pred.confidence || 0) * 100);
+
+          let color;
+          if (!isMatch) {
+            color = "#a1887f";
+          } else if (pred.confidence >= CONFIDENCE_THRESHOLD) {
+            color = "#2e7d32";
+          } else {
+            color = "#c62828";
+          }
+
+          ctx.strokeStyle = color;
+          ctx.lineWidth = lineWidth;
+          ctx.strokeRect(boxX, boxY, pred.width, pred.height);
+
+          const label = `${detectedClass} ${confPercent}%`;
+          const textWidth = ctx.measureText(label).width;
+          const labelPadding = 8;
+          const labelHeight = fontSize + 8;
+          const labelY = boxY >= labelHeight ? boxY : boxY + pred.height + labelHeight;
+
+          ctx.fillStyle = color;
+          ctx.fillRect(boxX, labelY - labelHeight, textWidth + labelPadding * 2, labelHeight);
+
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText(label, boxX + labelPadding, labelY - 4);
+        });
+      };
+
+      img.src = imageDataUrl;
+      canvas.closest(".result-image-frame").classList.add("show");
+      document.getElementById("resultImages").classList.add("show");
+    }
+
+    function renderSidePredictions(sideLabel, predictions, expectedClass) {
+      let html = `<div class="result-card">`;
+      html += `<div class="result-card-title">📍 ${sideLabel}</div>`;
+
+      let matchedCount = 0;
+      let sideStatus = "NO_DETECTION";
+
+      if (predictions && predictions.length > 0) {
+        predictions.forEach((pred, index) => {
+          const confPercent = (pred.confidence * 100).toFixed(1);
+          const detectedClass = (pred.class || "").trim();
+          const partName = detectedClass ? detectedClass.toUpperCase() : "ไม่ทราบชื่อ";
+          const isMatch = normalizeClassCode(detectedClass) === normalizeClassCode(expectedClass);
+
+          let statusBadge = "";
+          let reasonText = "";
+          if (!isMatch) {
+            statusBadge = `<span class="badge-inline no">ไม่พบชิ้นส่วน</span>`;
+            reasonText = `⬜ คลาสที่ตรวจเจอไม่ตรงกับรหัสพาร์ทที่สแกน — อาจสแกนผิดพาร์ท หรือ AI จำแนกคลาสผิด`;
+          } else if (pred.confidence >= CONFIDENCE_THRESHOLD) {
+            matchedCount++;
+            if (sideStatus !== "NG") sideStatus = "FG";
+            statusBadge = `<span class="badge-inline fg">FG</span>`;
+          } else {
+            matchedCount++;
+            sideStatus = "NG";
+            statusBadge = `<span class="badge-inline ng">NG</span>`;
+            reasonText = `🔴 ความมั่นใจต่ำกว่าเกณฑ์ ${Math.round(CONFIDENCE_THRESHOLD * 100)}% — อาจเกิดจากชิ้นงานมีตำหนิ/เสียหายจริง, ถ่ายภาพไม่ชัด/เบลอ, แสงไม่พอ, หรือมุม/ระยะถ่ายไม่เหมาะสม`;
+          }
+
+          html += `
+            <div class="result-item-title">
+                ชิ้นที่ ${index + 1}: ${partName} ${statusBadge}
+            </div>
+            <div class="result-conf">
+                ความใกล้เคียง: ${confPercent}%
+            </div>
+            ${reasonText ? `<div class="result-reason">${reasonText}</div>` : ""}
+          `;
+
+          if (index < predictions.length - 1) {
+            html += `<hr class="result-divider">`;
+          }
+        });
+
+        if (matchedCount === 0) {
+          sideStatus = "NO_DETECTION";
+          html += `
+            <div class="result-empty">ไม่พบชิ้นส่วนที่ตรงกับรหัสพาร์ทที่สแกน</div>
+          `;
+        }
+      } else {
+        html += `<div class="result-empty">ไม่พบชิ้นส่วนในภาพ หรือ AI ตรวจไม่พบ</div>`;
+        sideStatus = "NO_DETECTION";
+      }
+
+      html += `</div>`;
+      return { html, status: sideStatus };
+    }
+
+    function confidencePassesThreshold(confidence) {
+      const value = Number(confidence);
+      return Number.isFinite(value) &&
+             (value <= 1 ? value : value / 100) >= AI_CONFIDENCE_THRESHOLD;
+    }
+
+    function confidenceToPercent(confidence) {
+      const value = Number(confidence);
+      if (!Number.isFinite(value)) return 0;
+      return value <= 1 ? value * 100 : value;
+    }
+
+    btnAnalyze.addEventListener("click", async function () {
+      if (isAnalyzing) return;
+
+      if (!SLOTS.front.file) {
+        alert("กรุณาถ่ายรูปด้านหน้าก่อนครับ");
+        return;
+      }
+
+      if (!currentPartCode || !PARTS.includes(currentPartCode)) {
+        alert("ไม่พบการตั้งค่าพาร์ทนี้ กรุณากลับไปสแกนใหม่");
+        return;
+      }
+
+      getResultAudioContext();
+
+      isAnalyzing = true;
+      btnAnalyze.disabled = true;
+      btnAnalyze.innerText = "กำลังวิเคราะห์...";
+      showStatusHtml(`<div class="loading-note">กำลังดึงรูปภาพและส่งวิเคราะห์ผ่านเซิร์ฟเวอร์ (${currentPartCode})...</div>`);
+
+      try {
+        // ถ้ารูปมาจากกล้อง iPad ให้ preprocess ก่อนส่ง AI
+        // ส่วนรูปจากคลังจะผ่าน pipeline เดียวกันเพื่อให้ input มีมาตรฐานเดียวกัน
+        const aiFrontFile = await preprocessImageForAI(SLOTS.front.file, {
+          maxSide: 1600,
+          jpegQuality: 0.92
+        });
+        const frontDataUrl = await fileToDataUrl(aiFrontFile);
+
+        const aiBarcodeFile = SLOTS.barcode.file
+          ? await preprocessImageForAI(SLOTS.barcode.file, {
+              maxSide: 1600,
+              jpegQuality: 0.92
+            })
+          : null;
+        const barcodeDataUrl = aiBarcodeFile ? await fileToDataUrl(aiBarcodeFile) : null;
+
+        if (barcodeDataUrl) {
+          fetch('proxy.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'barcode_training',
+              part: currentPartCode,
+              image: barcodeDataUrl
+            })
+          }).catch(err => console.warn("บันทึกรูปบาร์โค้ด/QR สำหรับเทรนโมเดลไม่สำเร็จ:", err));
+        }
+
+        const response = await fetch('proxy.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            part: currentPartCode,
+            images: {
+              front: frontDataUrl,
+              barcode: barcodeDataUrl
+            }
+          })
+        });
+
+        const rawText = await response.text();
+        let result;
+        try {
+          result = JSON.parse(rawText);
+        } catch (parseErr) {
+          throw new Error(`เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON (Status: ${response.status})\n${(rawText || "(ไม่มีเนื้อหาตอบกลับเลย — อาจเกิดจากสคริปต์ค้าง/timeout หรือ error ที่ทำให้ไม่มี output ออกมา)").slice(0, 800)}`);
+        }
+
+        if (!response.ok || result.error || result.message) {
+          const detailMsg = result.message || result.error || "Unknown Error";
+          const extraDetail = result.detail ? `\n${result.detail}` : "";
+          throw new Error(`เซิร์ฟเวอร์ตอบกลับผิดพลาด (Status: ${response.status})\n${typeof detailMsg === 'object' ? JSON.stringify(detailMsg) : detailMsg}${extraDetail}`);
+        }
+
+        const expectedClass = (EXPECTED_CLASS[currentPartCode] || "").trim().toUpperCase();
+
+        const outputs = Array.isArray(result.outputs) ? result.outputs : [];
+        const frontPredictions = (outputs[0] && outputs[0].predictions) ? outputs[0].predictions.predictions : null;
+        const barcodePredictions = (outputs[1] && outputs[1].predictions) ? outputs[1].predictions.predictions : null;
+
+        document.getElementById("resultFrameFront").classList.remove("show");
+        document.getElementById("resultFrameBarcode").classList.remove("show");
+        document.getElementById("resultImages").classList.remove("show");
+
+        if (frontPredictions && frontPredictions.length > 0) {
+          drawDetectionBoxes("resultCanvasFront", frontDataUrl, frontPredictions, expectedClass);
+          SLOTS.front.preview.style.display = "none";
+        }
+        if (barcodeDataUrl && barcodePredictions && barcodePredictions.length > 0) {
+          drawDetectionBoxes("resultCanvasBarcode", barcodeDataUrl, barcodePredictions, expectedClass);
+          SLOTS.barcode.preview.style.display = "none";
+        }
+
+        const frontResult = renderSidePredictions("ด้านหน้า", frontPredictions, expectedClass);
+        const barcodeResult = barcodeDataUrl ? renderSidePredictions("QR/บาร์โค้ด", barcodePredictions, expectedClass) : null;
+
+        let overallStatus;
+        if (result.overall_status) {
+          overallStatus = result.overall_status;
+        } else {
+          overallStatus = frontResult.status;
+        }
+
+        const overallBadgeColor = overallStatus === "FG" ? "#2e7d32" : (overallStatus === "NG" ? "#c62828" : "#a1887f");
+        const overallBadgeText = overallStatus === "FG" ? "ผ่าน (FG)" : (overallStatus === "NG" ? "ไม่ผ่าน (NG)" : "ไม่พบชิ้นส่วน");
+
+        playResultSound(overallStatus);
+
+        let resultHtml = `
+          <div class="result-heading">
+            🎉 สำเร็จเรียบร้อย! ผลการวิเคราะห์จาก AI (${currentPartCode}):
+          </div>
+          <div class="result-overall-wrap">
+            <span class="badge" style="background-color:${overallBadgeColor}; font-size:14px; padding:6px 16px;">สถานะรวม: ${overallBadgeText}</span>
+          </div>
+        `;
+
+        resultHtml += frontResult.html;
+
+        if (barcodeResult) {
+          resultHtml += barcodeResult.html;
+        }
+
+        resultHtml += `
+          <div class="legend-box">
+            <div><span style="color:var(--color-fg); font-weight:bold;">🟢 เขียว</span> = ตรงพาร์ท และผ่านเกณฑ์ (FG)</div>
+            <div><span style="color:var(--color-ng); font-weight:bold;">🔴 แดง</span> = ตรงพาร์ท แต่ไม่ผ่านเกณฑ์ (มั่นใจต่ำกว่า ${Math.round(CONFIDENCE_THRESHOLD * 100)}%, ภาพไม่ชัด, แสงไม่พอ, หรือชิ้นงานมีตำหนิ) (NG)</div>
+            <div><span style="color:var(--color-muted); font-weight:bold;">⬜ เทา</span> = ตรวจเจอ แต่ไม่ตรงกับพาร์ทที่สแกน (ไม่พบชิ้นส่วน)</div>
+            <div style="margin-top:6px;">📌 QR/บาร์โค้ด แสดงกรอบ+% ความมั่นใจจาก Roboflow แบบเดียวกับด้านหน้าทุกประการ (ไม่อ่านตัวอักษรจากตัวบาร์โค้ด/QR) — แต่<strong>ไม่ถูกนำมารวมคิดสถานะรวม (FG/NG) ของชิ้นงาน</strong> เป็นเพียงข้อมูลอ้างอิงเสริมเท่านั้น สถานะรวมตัดสินจากด้านหน้าเท่านั้น และรูปยังถูกบันทึกแยกไว้เป็นชุดข้อมูลฝึกโมเดลด้วย</div>
+          </div>
+        `;
+
+        if (overallStatus === "NG" && result.id) {
+          resultHtml += `
+            <div class="result-card" id="ngReasonCard">
+              <div class="result-card-title">📝 ระบุสาเหตุ NG (ช่วยวิเคราะห์ต้นตอปัญหาได้แม่นขึ้น)</div>
+              <div class="ng-reason-options" id="ngReasonOptions">
+                ${NG_REASONS.map(r => `<button type="button" class="ng-reason-btn" onclick="selectNgReason(${result.id}, '${r.value}')">${r.label}</button>`).join("")}
+              </div>
+              <div id="ngReasonStatus" style="margin-top:8px; font-size:13px; color:#8b5a2b;"></div>
+            </div>
+          `;
+        }
+
+        resultHtml += `
+          <details style="margin-top: 5px;">
+            <summary>▶ ดูข้อมูลดิบ (JSON)</summary>
+            <pre style="margin-top: 10px;">${JSON.stringify(result, null, 2)}</pre>
+          </details>
+        `;
+
+        showStatusHtml(resultHtml);
+
+      } catch (error) {
+        console.error("Error details:", error);
+        showStatusHtml(`
+          <div class="alert-title">เกิดข้อผิดพลาดในการเชื่อมต่อหรือประมวลผล:</div>
+          <div class="alert-box error">
+            ${error.message.replace(/\n/g, '<br>')}
+          </div>
+        `);
+      } finally {
+        isAnalyzing = false;
+        btnAnalyze.disabled = false;
+        btnAnalyze.innerText = "ส่งวิเคราะห์ไปยัง Roboflow";
+      }
+    });
+
+    /* =========================================================
+       ส่วนที่ 1: ข้อมูลชิ้นงาน / ตัวกรอง
+       ========================================================= */
+    let allRecords = [];
+    let currentFilteredRecords = [];
+
+    async function loadRecordsData() {
+      try {
+        const res = await fetch("data/inspections.json?t=" + Date.now());
+        if (!res.ok) throw new Error("ไม่พบไฟล์ข้อมูล (data/inspections.json)");
+        const json = await res.json();
+        allRecords = Array.isArray(json) ? json : [];
+      } catch (err) {
+        allRecords = [];
+        document.getElementById("tblBody").innerHTML =
+          `<tr><td colspan="8" class="empty-state">ยังไม่มีข้อมูลการตรวจสอบ หรือโหลดข้อมูลไม่สำเร็จ<br><span style="font-size:12px;">(${err.message})</span></td></tr>`;
+      }
+      populatePartFilter();
+      applyFilters();
+    }
+
+    function populatePartFilter() {
+      const partSet = [...new Set(allRecords.map(r => r.part_code))].sort();
+      const select = document.getElementById("fltPart");
+      const currentValue = select.value;
+      select.innerHTML = `<option value="">ทั้งหมด</option>` +
+        partSet.map(p => `<option value="${p}">${p}</option>`).join("");
+      select.value = currentValue;
+    }
+
+    function applyFilters() {
+      const part = document.getElementById("fltPart").value;
+      const status = document.getElementById("fltStatus").value;
+      const from = document.getElementById("fltFrom").value;
+      const to = document.getElementById("fltTo").value;
+      const search = document.getElementById("fltSearch").value.trim().toUpperCase();
+
+      const filtered = allRecords.filter(r => {
+        if (part && r.part_code !== part) return false;
+        if (status && normalizeInspectionStatus(r.overall_status) !== status) return false;
+
+        if (from || to) {
+          const recDate = (r.datetime || "").slice(0, 10);
+          if (from && recDate < from) return false;
+          if (to && recDate > to) return false;
+        }
+
+        if (search) {
+          const haystack = `${r.part_code || ""} ${r.datetime || ""}`.toUpperCase();
+          if (!haystack.includes(search)) return false;
+        }
+
+        return true;
+      });
+
+      filtered.sort((a, b) => (b.id || 0) - (a.id || 0));
+      currentFilteredRecords = filtered;
+
+      renderMiniSummary(filtered);
+      renderRecordsTable(filtered);
+    }
+
+    function renderMiniSummary(records) {
+      const total = records.length;
+      const okCount = records.filter(r => normalizeInspectionStatus(r.overall_status) === "FG").length;
+      const ngCount = records.filter(r => normalizeInspectionStatus(r.overall_status) === "NG").length;
+      const noCount = records.filter(r => r.overall_status === "NO_DETECTION").length;
+
+      document.getElementById("miniSummary").innerHTML = `
+        <div class="mini-card"><div class="num">${total}</div><div class="lbl">รายการทั้งหมด</div></div>
+        <div class="mini-card fg"><div class="num">${okCount}</div><div class="lbl">FG</div></div>
+        <div class="mini-card ng"><div class="num">${ngCount}</div><div class="lbl">NG</div></div>
+        <div class="mini-card no"><div class="num">${noCount}</div><div class="lbl">ไม่พบชิ้นส่วน</div></div>
+      `;
+    }
+
+    function statusLabel(status) {
+      if (status === "FG") return "FG";
+      if (status === "NG") return "NG";
+      if (status === "NO_DETECTION") return "ไม่พบชิ้นส่วน";
+      return status || "-";
+    }
+
+    function buildThumbCell(path, label) {
+      const inner = path
+        ? `<img class="thumb" src="${path}" alt="รูป${label}" onclick="openImageModal('${path}')">`
+        : `<div class="thumb-empty">–</div>`;
+      return `<div class="thumb-cell">${inner}<span class="thumb-lbl">${label}</span></div>`;
+    }
+
+    function renderRecordsTable(records) {
+      const tbody = document.getElementById("tblBody");
+      document.getElementById("rowCount").textContent = `แสดง ${records.length} รายการ`;
+
+      if (records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = records.map(r => {
+        const statusClass = normalizeInspectionStatus(r.overall_status);
+
+        const imgCell = `
+          <div class="thumb-group">
+            ${buildThumbCell(r.image_path, "หน้า")}
+            ${buildThumbCell(r.image_path_barcode, "บาร์โค้ด")}
+          </div>
+        `;
+
+        const ngReasonCell = r.ng_reason
+          ? `<span style="font-size:12px;">${ngReasonLabel(r.ng_reason, r.ng_reason_note)}</span>`
+          : `<span style="font-size:12px; color:#a1887f;">-</span>`;
+
+        return `
+          <tr>
+            <td>${r.datetime || "-"}</td>
+            <td><strong>${r.part_code || "-"}</strong></td>
+            <td>${r.total_detections ?? "-"}</td>
+            <td>${r.ok_count ?? 0}</td>
+            <td>${r.ng_count ?? 0}</td>
+            <td><span class="badge ${statusClass}">${statusLabel(normalizeInspectionStatus(r.overall_status))}</span></td>
+            <td>${ngReasonCell}</td>
+            <td>${imgCell}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function openImageModal(src) {
+      document.getElementById("modalImg").src = src;
+      document.getElementById("imgModal").classList.add("show");
+    }
+
+    document.getElementById("imgModal").addEventListener("click", function () {
+      this.classList.remove("show");
+      document.getElementById("modalImg").src = "";
+    });
+
+    document.getElementById("btnApply").addEventListener("click", applyFilters);
+    document.getElementById("btnClear").addEventListener("click", function () {
+      document.getElementById("fltPart").value = "";
+      document.getElementById("fltStatus").value = "";
+      document.getElementById("fltFrom").value = "";
+      document.getElementById("fltTo").value = "";
+      document.getElementById("fltSearch").value = "";
+      applyFilters();
+    });
+
+    document.getElementById("fltSearch").addEventListener("input", applyFilters);
+
+    /* =========================================================
+       ส่วนที่ 2: Export Excel (สร้างไฟล์ .xlsx ฝั่งเบราว์เซอร์ล้วนๆ ไม่พึ่งไลบรารีภายนอก
+       รวมรูปภาพ + ตรึงแถวหัวตาราง (Freeze Panes) ไว้เสมอ)
+       ========================================================= */
+    function escapeXml(value) {
+      return String(value ?? "").replace(/[<>&'\"]/g, char => ({
+        "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", "\"": "&quot;"
+      }[char]));
+    }
+
+    function excelColumnName(index) {
+      let name = "";
+      let value = index + 1;
+      while (value > 0) {
+        const remainder = (value - 1) % 26;
+        name = String.fromCharCode(65 + remainder) + name;
+        value = Math.floor((value - 1) / 26);
+      }
+      return name;
+    }
+
+    function crc32(bytes) {
+      let crc = 0xffffffff;
+      for (let i = 0; i < bytes.length; i++) {
+        crc ^= bytes[i];
+        for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+      }
+      return (crc ^ 0xffffffff) >>> 0;
+    }
+
+    function createStoredZip(entries) {
+      const encoder = new TextEncoder();
+      const parts = [];
+      const directory = [];
+      let offset = 0;
+      const now = getThaiDateTimeParts();
+      const dosTime = (now.hour << 11) | (now.minute << 5) | Math.floor(now.second / 2);
+      const dosDate = ((now.year - 1980) << 9) | (now.month << 5) | now.day;
+      const write16 = (view, at, value) => view.setUint16(at, value, true);
+      const write32 = (view, at, value) => view.setUint32(at, value >>> 0, true);
+
+      entries.forEach(entry => {
+        const name = encoder.encode(entry.name);
+        const data = entry.data instanceof Uint8Array ? entry.data : new Uint8Array(entry.data);
+        const crc = crc32(data);
+        const local = new Uint8Array(30 + name.length);
+        const view = new DataView(local.buffer);
+        write32(view, 0, 0x04034b50); write16(view, 4, 20); write16(view, 6, 0); write16(view, 8, 0);
+        write16(view, 10, dosTime); write16(view, 12, dosDate); write32(view, 14, crc);
+        write32(view, 18, data.length); write32(view, 22, data.length); write16(view, 26, name.length); write16(view, 28, 0);
+        local.set(name, 30);
+        parts.push(local, data);
+        directory.push({ name, crc, size: data.length, offset });
+        offset += local.length + data.length;
+      });
+
+      const centralOffset = offset;
+      directory.forEach(entry => {
+        const central = new Uint8Array(46 + entry.name.length);
+        const view = new DataView(central.buffer);
+        write32(view, 0, 0x02014b50); write16(view, 4, 20); write16(view, 6, 20); write16(view, 8, 0); write16(view, 10, 0);
+        write16(view, 12, dosTime); write16(view, 14, dosDate); write32(view, 16, entry.crc);
+        write32(view, 20, entry.size); write32(view, 24, entry.size); write16(view, 28, entry.name.length);
+        write16(view, 30, 0); write16(view, 32, 0); write16(view, 34, 0); write16(view, 36, 0); write32(view, 38, 0); write32(view, 42, entry.offset);
+        central.set(entry.name, 46);
+        parts.push(central);
+        offset += central.length;
+      });
+
+      const end = new Uint8Array(22);
+      const view = new DataView(end.buffer);
+      write32(view, 0, 0x06054b50); write16(view, 4, 0); write16(view, 6, 0);
+      write16(view, 8, directory.length); write16(view, 10, directory.length);
+      write32(view, 12, offset - centralOffset); write32(view, 16, centralOffset); write16(view, 20, 0);
+      parts.push(end);
+      return new Blob(parts, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    }
+
+    const REPORT_THUMB_MAX_W = 200;
+    const REPORT_THUMB_MAX_H = 140;
+    const EMU_PER_PX = 9525;
+
+    async function loadReportImages(records) {
+      const images = [];
+      let imageId = 1;
+      const imageColumns = ["image_path", "image_path_barcode"];
+      for (let row = 0; row < records.length; row++) {
+        for (let imageIndex = 0; imageIndex < imageColumns.length; imageIndex++) {
+          const path = records[row][imageColumns[imageIndex]];
+          if (!path) continue;
+          try {
+            const response = await fetch(path);
+            if (!response.ok) continue;
+            const type = response.headers.get("content-type") || "image/jpeg";
+            const extension = type.includes("png") ? "png" : "jpg";
+            const blob = await response.blob();
+            const data = new Uint8Array(await blob.arrayBuffer());
+
+            let naturalWidth = REPORT_THUMB_MAX_W;
+            let naturalHeight = REPORT_THUMB_MAX_H;
+            try {
+              const bitmap = await createImageBitmap(blob);
+              naturalWidth = bitmap.width;
+              naturalHeight = bitmap.height;
+              bitmap.close();
+            } catch (dimErr) {
+              console.warn("Could not read image dimensions, using default box size:", path, dimErr);
+            }
+
+            const scale = Math.min(REPORT_THUMB_MAX_W / naturalWidth, REPORT_THUMB_MAX_H / naturalHeight, 1);
+            const width = Math.max(1, Math.round(naturalWidth * scale));
+            const height = Math.max(1, Math.round(naturalHeight * scale));
+
+            images.push({
+              id: imageId++,
+              row: row + 1,
+              column: imageIndex + 7,
+              extension,
+              data,
+              width,
+              height
+            });
+          } catch (error) {
+            console.warn("Could not include report image:", path, error);
+          }
+        }
+      }
+      return images;
+    }
+
+    async function exportRecordsToExcel(records) {
+      if (!records || records.length === 0) {
+        alert("ไม่พบข้อมูลที่ตรงกับตัวกรองที่เลือก");
+        return;
+      }
+
+      const images = await loadReportImages(records);
+      const encoder = new TextEncoder();
+      const headers = ["ID", "Date Time", "Part Code", "Status", "Detections", "FG Count", "NG Count", "Front", "Barcode"];
+      const rows = [headers, ...records.map(record => [record.id || "", record.datetime || "", record.part_code || "", normalizeInspectionStatus(record.overall_status), record.total_detections ?? "", record.ok_count ?? "", record.ng_count ?? "", "", ""])];
+
+      const maxImageHeightPxByRow = {};
+      images.forEach(image => {
+        if (!maxImageHeightPxByRow[image.row] || image.height > maxImageHeightPxByRow[image.row]) {
+          maxImageHeightPxByRow[image.row] = image.height;
+        }
+      });
+      const PX_TO_PT = 0.75;
+      const ROW_PADDING_PX = 12;
+      const DEFAULT_ROW_HEIGHT_PT = 18;
+
+      const sheetRows = rows.map((row, rowIndex) => {
+        let heightAttr = "";
+        if (rowIndex > 0) {
+          const imgH = maxImageHeightPxByRow[rowIndex] || 0;
+          const rowHeightPt = imgH > 0 ? Math.ceil((imgH + ROW_PADDING_PX) * PX_TO_PT) : DEFAULT_ROW_HEIGHT_PT;
+          heightAttr = ` ht="${rowHeightPt}" customHeight="1"`;
+        }
+        return `<row r="${rowIndex + 1}"${heightAttr}>${row.map((value, columnIndex) => `<c r="${excelColumnName(columnIndex)}${rowIndex + 1}" t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`).join("")}</row>`;
+      }).join("");
+
+      const imageColWidth = Math.round((((REPORT_THUMB_MAX_W - 5) / 7) + Number.EPSILON) * 100) / 100;
+      const drawingRel = images.length ? '<drawing r:id="rId1"/>' : "";
+
+      // แถวหัวตาราง (แถวที่ 1) ถูกตรึงไว้เสมอผ่าน <pane ySplit="1" .../> — ผู้ใช้เลื่อนดูข้อมูล
+      // จำนวนมากได้โดยหัวตารางยังคงอยู่ด้านบนตลอดเวลา (Freeze Panes)
+      const sheetViews = `<sheetViews><sheetView tabSelected="1" workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A2" sqref="A2"/></sheetView></sheetViews>`;
+
+      const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">${sheetViews}<cols><col min="1" max="1" width="8" customWidth="1"/><col min="2" max="2" width="20" customWidth="1"/><col min="3" max="3" width="20" customWidth="1"/><col min="4" max="4" width="16" customWidth="1"/><col min="5" max="7" width="13" customWidth="1"/><col min="8" max="9" width="${imageColWidth}" customWidth="1"/></cols><sheetData>${sheetRows}</sheetData>${drawingRel}</worksheet>`;
+
+      const drawingAnchors = images.map(image => {
+        const cx = image.width * EMU_PER_PX;
+        const cy = image.height * EMU_PER_PX;
+        return `<xdr:oneCellAnchor><xdr:from><xdr:col>${image.column}</xdr:col><xdr:colOff>19050</xdr:colOff><xdr:row>${image.row}</xdr:row><xdr:rowOff>19050</xdr:rowOff></xdr:from><xdr:ext cx="${cx}" cy="${cy}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${image.id}" name="Inspection Image ${image.id}"/><xdr:cNvPicPr/></xdr:nvPicPr><xdr:blipFill><a:blip xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" r:embed="rId${image.id}"/><a:stretch xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>`;
+      }).join("");
+
+      const entries = [
+        { name: "[Content_Types].xml", data: encoder.encode(`<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="png" ContentType="image/png"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>${images.length ? '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>' : ""}</Types>`) },
+        { name: "_rels/.rels", data: encoder.encode(`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`) },
+        { name: "xl/workbook.xml", data: encoder.encode(`<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Inspection History" sheetId="1" r:id="rId1"/></sheets></workbook>`) },
+        { name: "xl/_rels/workbook.xml.rels", data: encoder.encode(`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`) },
+        { name: "xl/worksheets/sheet1.xml", data: encoder.encode(sheet) }
+      ];
+      if (images.length) {
+        entries.push({ name: "xl/worksheets/_rels/sheet1.xml.rels", data: encoder.encode(`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/></Relationships>`) });
+        entries.push({ name: "xl/drawings/drawing1.xml", data: encoder.encode(`<?xml version="1.0" encoding="UTF-8"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">${drawingAnchors}</xdr:wsDr>`) });
+        entries.push({ name: "xl/drawings/_rels/drawing1.xml.rels", data: encoder.encode(`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${images.map(image => `<Relationship Id="rId${image.id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image${image.id}.${image.extension}"/>`).join("")}</Relationships>`) });
+        images.forEach(image => entries.push({ name: `xl/media/image${image.id}.${image.extension}`, data: image.data }));
+      }
+
+      const url = URL.createObjectURL(createStoredZip(entries));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `inspection-report-${getTodayThaiDateString()}.xlsx`;
+      document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+    }
+
+    async function loadExportExcelView() {
+      try {
+        const res = await fetch("data/inspections.json?t=" + Date.now());
+        if (!res.ok) throw new Error("ไม่พบไฟล์ข้อมูล (data/inspections.json)");
+        const json = await res.json();
+        const records = Array.isArray(json) ? json : [];
+        const partSet = [...new Set(records.map(r => r.part_code))].sort();
+        const select = document.getElementById("xlsPart");
+        const currentValue = select.value;
+        select.innerHTML = `<option value="">ทั้งหมด</option>` + partSet.map(p => `<option value="${p}">${p}</option>`).join("");
+        select.value = currentValue;
+      } catch (err) {
+        console.warn("โหลดรายชื่อพาร์ทสำหรับหน้า Export Excel ไม่สำเร็จ:", err);
+      }
+    }
+
+    async function generateExcelReport() {
+      const btn = document.getElementById("btnGenerateExcel");
+      const statusEl = document.getElementById("excelGenerateStatus");
+      const part = document.getElementById("xlsPart").value;
+      const status = document.getElementById("xlsStatus").value;
+      const from = document.getElementById("xlsFrom").value;
+      const to = document.getElementById("xlsTo").value;
+
+      statusEl.textContent = "กำลังเตรียมไฟล์...";
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("data/inspections.json?t=" + Date.now());
+        if (!res.ok) throw new Error("ไม่พบไฟล์ข้อมูล (data/inspections.json)");
+        const json = await res.json();
+        const records = Array.isArray(json) ? json : [];
+
+        const filtered = records.filter(r => {
+          if (part && r.part_code !== part) return false;
+          if (status && normalizeInspectionStatus(r.overall_status) !== status) return false;
+          if (from || to) {
+            const recDate = (r.datetime || "").slice(0, 10);
+            if (from && recDate < from) return false;
+            if (to && recDate > to) return false;
+          }
+          return true;
+        });
+
+        filtered.sort((a, b) => (a.id || 0) - (b.id || 0));
+
+        await exportRecordsToExcel(filtered);
+        statusEl.innerHTML = `<span style="color:#2e7d32;">✅ สร้างไฟล์ ${filtered.length} รายการเรียบร้อย</span>`;
+      } catch (err) {
+        console.error("Excel export failed:", err);
+        statusEl.innerHTML = `<span style="color:#c62828;">❌ ${err.message}</span>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById("btnGenerateExcel").addEventListener("click", generateExcelReport);
+
+    /* =========================================================
+       ส่วนที่ 3: แดชบอร์ด / สรุปผลทั้งหมด
+       ========================================================= */
+    let allSummaryRecords = [];
+
+    async function loadSummaryData() {
+      try {
+        const res = await fetch("data/inspections.json?t=" + Date.now());
+        if (!res.ok) throw new Error("ไม่พบไฟล์ข้อมูล (data/inspections.json)");
+        const json = await res.json();
+        allSummaryRecords = Array.isArray(json) ? json : [];
+
+        if (allSummaryRecords.length === 0) {
+          document.getElementById("summaryContent").innerHTML =
+            `<div class="empty-state">ยังไม่มีข้อมูลการตรวจสอบ</div>`;
+          document.getElementById("updatedNote").textContent = "";
+          return;
+        }
+
+        applySummaryFilter();
+
+      } catch (err) {
+        document.getElementById("summaryContent").innerHTML =
+          `<div class="empty-state">โหลดข้อมูลไม่สำเร็จ<br><span style="font-size:12px;">(${err.message})</span></div>`;
+      }
+    }
+
+    function applySummaryFilter() {
+      const from = document.getElementById("sumFrom").value;
+      const to = document.getElementById("sumTo").value;
+
+      let records = allSummaryRecords;
+      if (from || to) {
+        records = allSummaryRecords.filter(r => {
+          const recDate = (r.datetime || "").slice(0, 10);
+          if (from && recDate < from) return false;
+          if (to && recDate > to) return false;
+          return true;
+        });
+      }
+
+      if (records.length === 0) {
+        document.getElementById("summaryContent").innerHTML =
+          `<div class="empty-state">ไม่พบข้อมูลในช่วงวันที่ที่เลือก</div>`;
+      } else {
+        renderSummary(records);
+      }
+
+      const rangeNote = (from || to) ? ` · ช่วงวันที่: ${from || "…"} ถึง ${to || "…"}` : "";
+      document.getElementById("updatedNote").textContent =
+        `อัปเดตล่าสุด: ${formatThaiNow()} · แสดง ${records.length} จาก ${allSummaryRecords.length} รายการ${rangeNote}`;
+    }
+
+    document.getElementById("btnSumApply").addEventListener("click", applySummaryFilter);
+    document.getElementById("btnSumClear").addEventListener("click", function () {
+      document.getElementById("sumFrom").value = "";
+      document.getElementById("sumTo").value = "";
+      applySummaryFilter();
+    });
+
+    function renderSummary(records) {
+      const total = records.length;
+      const okCount = records.filter(r => normalizeInspectionStatus(r.overall_status) === "FG").length;
+      const ngCount = records.filter(r => normalizeInspectionStatus(r.overall_status) === "NG").length;
+      const noCount = records.filter(r => r.overall_status === "NO_DETECTION").length;
+      const passRate = total > 0 ? ((okCount / total) * 100).toFixed(1) : "0.0";
+      const today = getTodayThaiDateString();
+      const todayRecords = records.filter(r => (r.datetime || "").slice(0, 10) === today);
+      const todayOk = todayRecords.filter(r => normalizeInspectionStatus(r.overall_status) === "FG").length;
+      const todayNg = todayRecords.filter(r => normalizeInspectionStatus(r.overall_status) === "NG").length;
+      const todayYield = todayRecords.length ? ((todayOk / todayRecords.length) * 100).toFixed(1) : "0.0";
+
+      const byPart = {};
+      records.forEach(r => {
+        const code = r.part_code || "ไม่ทราบ";
+        if (!byPart[code]) {
+          byPart[code] = { total: 0, ok: 0, ng: 0, no: 0 };
+        }
+        byPart[code].total++;
+        if (normalizeInspectionStatus(r.overall_status) === "FG") byPart[code].ok++;
+        else if (normalizeInspectionStatus(r.overall_status) === "NG") byPart[code].ng++;
+        else byPart[code].no++;
+      });
+
+      const partCodes = Object.keys(byPart).sort();
+
+      const ngReasonCounts = {};
+      let ngWithReasonTotal = 0;
+      records.forEach(r => {
+        if (r.overall_status !== "NG") return;
+        const key = r.ng_reason || "__unspecified__";
+        ngReasonCounts[key] = (ngReasonCounts[key] || 0) + 1;
+        if (r.ng_reason) ngWithReasonTotal++;
+      });
+      const ngReasonRows = Object.keys(ngReasonCounts)
+        .sort((a, b) => ngReasonCounts[b] - ngReasonCounts[a])
+        .map(key => ({
+          label: key === "__unspecified__" ? "ยังไม่ระบุสาเหตุ" : ngReasonLabel(key),
+          count: ngReasonCounts[key]
+        }));
+
+      const TREND_MAX_DAYS = 30;
+      const byDate = {};
+      records.forEach(r => {
+        const date = (r.datetime || "").slice(0, 10);
+        if (!date) return;
+        if (!byDate[date]) byDate[date] = { total: 0, ok: 0, ng: 0, no: 0 };
+        byDate[date].total++;
+        if (normalizeInspectionStatus(r.overall_status) === "FG") byDate[date].ok++;
+        else if (normalizeInspectionStatus(r.overall_status) === "NG") byDate[date].ng++;
+        else byDate[date].no++;
+      });
+      const allTrendDates = Object.keys(byDate).sort();
+      const trendDates = allTrendDates.slice(-TREND_MAX_DAYS);
+      const trendOk = trendDates.map(d => byDate[d].ok);
+      const trendNg = trendDates.map(d => byDate[d].ng);
+      const trendYield = trendDates.map(d => byDate[d].total > 0 ? (byDate[d].ok / byDate[d].total) * 100 : 0);
+      const trendRangeLabel = trendDates.length === 0
+        ? "ไม่มีข้อมูล"
+        : (allTrendDates.length > TREND_MAX_DAYS
+            ? `${trendDates[0]} ถึง ${trendDates[trendDates.length - 1]} (${TREND_MAX_DAYS} วันล่าสุดจากทั้งหมด ${allTrendDates.length} วัน)`
+            : `${trendDates[0]} ถึง ${trendDates[trendDates.length - 1]}`);
+
+      document.getElementById("summaryContent").innerHTML = `
+        <h3 class="dashboard-section-heading">Today (${today})</h3>
+        <div class="top-cards">
+          <div class="stat-card"><div class="num">${todayRecords.length}</div><div class="lbl">Today Inspections</div></div>
+          <div class="stat-card fg"><div class="num">${todayOk}</div><div class="lbl">Today FG</div></div>
+          <div class="stat-card ng"><div class="num">${todayNg}</div><div class="lbl">Today NG</div></div>
+          <div class="stat-card rate"><div class="num">${todayYield}%</div><div class="lbl">Today Yield</div></div>
+        </div>
+
+        <h3 class="dashboard-section-heading">Records in range</h3>
+        <div class="top-cards">
+          <div class="stat-card"><div class="num">${total}</div><div class="lbl">ตรวจสอบทั้งหมด</div></div>
+          <div class="stat-card fg"><div class="num">${okCount}</div><div class="lbl">FG</div></div>
+          <div class="stat-card ng"><div class="num">${ngCount}</div><div class="lbl">NG</div></div>
+          <div class="stat-card no"><div class="num">${noCount}</div><div class="lbl">ไม่พบชิ้นส่วน</div></div>
+          <div class="stat-card rate"><div class="num">${passRate}%</div><div class="lbl">อัตราผ่าน (FG)</div></div>
+        </div>
+
+        <div class="chart-grid">
+          <div class="chart-box">
+            <h3>สัดส่วนสถานะรวม</h3>
+            <canvas id="statusChartCanvas"></canvas>
+          </div>
+          <div class="chart-box">
+            <h3>FG vs NG แยกตามพาร์ท</h3>
+            <canvas id="partChartCanvas"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-box" style="margin-bottom:24px;">
+          <h3>แนวโน้มคุณภาพตามช่วงเวลา <span style="font-weight:normal; font-size:12px; color:#a1887f;">(${trendRangeLabel})</span></h3>
+          <canvas id="trendChartCanvas"></canvas>
+        </div>
+
+        ${ngReasonRows.length > 0 ? `
+        <h3 class="dashboard-section-heading">สรุปสาเหตุ NG</h3>
+        <p style="font-size:12px; margin-top:-8px;">ระบุสาเหตุแล้ว ${ngWithReasonTotal} จาก ${ngCount} รายการ NG ทั้งหมด</p>
+        <div class="table-wrap" style="margin-bottom:24px;">
+          <table>
+            <thead>
+              <tr>
+                <th>สาเหตุ</th>
+                <th>จำนวน</th>
+                <th>สัดส่วนจาก NG ทั้งหมด</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${ngReasonRows.map(row => {
+                const pct = ngCount > 0 ? ((row.count / ngCount) * 100).toFixed(1) : "0.0";
+                return `
+                  <tr>
+                    <td>${row.label}</td>
+                    <td>${row.count}</td>
+                    <td>${pct}%</td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+        ` : ""}
+
+        <h3>ตารางสรุปแยกตามรหัสพาร์ท</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>รหัสพาร์ท</th>
+                <th>ทั้งหมด</th>
+                <th>FG</th>
+                <th>NG</th>
+                <th>ไม่พบชิ้นส่วน</th>
+                <th>อัตราผ่าน</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${partCodes.map(code => {
+                const d = byPart[code];
+                const rate = d.total > 0 ? ((d.ok / d.total) * 100).toFixed(1) : "0.0";
+                let rateColor = "#a1887f";
+                if (rate >= 90) rateColor = "#2e7d32";
+                else if (rate >= 70) rateColor = "#c9a227";
+                else rateColor = "#c62828";
+
+                return `
+                  <tr>
+                    <td><strong>${code}</strong></td>
+                    <td>${d.total}</td>
+                    <td>${d.ok}</td>
+                    <td>${d.ng}</td>
+                    <td>${d.no}</td>
+                    <td><span class="badge-rate" style="background-color:${rateColor}">${rate}%</span></td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      renderCharts(okCount, ngCount, noCount, byPart, partCodes);
+      drawTimeTrendChart("trendChartCanvas", trendDates, trendOk, trendNg, trendYield);
+    }
+
+    function renderCharts(okCount, ngCount, noCount, byPart, partCodes) {
+      drawDoughnutChart("statusChartCanvas", [
+        { label: "FG", value: okCount, color: "#2e7d32" },
+        { label: "NG", value: ngCount, color: "#c62828" },
+        { label: "ไม่พบชิ้นส่วน", value: noCount, color: "#a1887f" }
+      ]);
+
+      drawGroupedBarChart(
+        "partChartCanvas",
+        partCodes,
+        partCodes.map(c => byPart[c].ok),
+        partCodes.map(c => byPart[c].ng)
+      );
+    }
+
+    function setupCanvasSize(canvas, cssWidth, cssHeight) {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.round(cssWidth * dpr));
+      canvas.height = Math.max(1, Math.round(cssHeight * dpr));
+      canvas.style.width = cssWidth + "px";
+      canvas.style.height = cssHeight + "px";
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cssWidth, cssHeight);
+      return ctx;
+    }
+
+    function drawDoughnutChart(canvasId, segments) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const cssWidth = Math.max(200, canvas.parentElement.clientWidth - 4);
+      const legendRowH = 20;
+      const cssHeight = 210 + segments.length * legendRowH;
+      const ctx = setupCanvasSize(canvas, cssWidth, cssHeight);
+
+      const total = segments.reduce((s, seg) => s + seg.value, 0);
+      const cx = cssWidth / 2;
+      const cy = 105;
+      const rOuter = 85;
+      const rInner = 48;
+
+      if (total === 0) {
+        ctx.strokeStyle = "#e0d5c8";
+        ctx.lineWidth = rOuter - rInner;
+        ctx.beginPath();
+        ctx.arc(cx, cy, (rOuter + rInner) / 2, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        let startAngle = -Math.PI / 2;
+        segments.forEach(seg => {
+          if (seg.value <= 0) return;
+          const angle = (seg.value / total) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, rOuter, startAngle, startAngle + angle);
+          ctx.closePath();
+          ctx.fillStyle = seg.color;
+          ctx.fill();
+          startAngle += angle;
+        });
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.beginPath();
+        ctx.arc(cx, cy, rInner, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+      }
+
+      ctx.fillStyle = "#654321";
+      ctx.font = "bold 22px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(total), cx, cy - 8);
+      ctx.font = "11px Arial";
+      ctx.fillStyle = "#8b5a2b";
+      ctx.fillText("รายการทั้งหมด", cx, cy + 14);
+
+      let legendY = cy + rOuter + 20;
+      ctx.font = "12px Arial";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      segments.forEach(seg => {
+        const legendX = cx - 70;
+        ctx.fillStyle = seg.color;
+        ctx.fillRect(legendX, legendY - 6, 12, 12);
+        ctx.fillStyle = "#654321";
+        ctx.fillText(`${seg.label}: ${seg.value}`, legendX + 18, legendY);
+        legendY += legendRowH;
+      });
+    }
+
+    function drawGroupedBarChart(canvasId, labels, okData, ngData) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const cssWidth = Math.max(240, canvas.parentElement.clientWidth - 4);
+      const rowH = 34;
+      const cssHeight = labels.length > 0 ? (labels.length * rowH + 40) : 100;
+      const ctx = setupCanvasSize(canvas, cssWidth, cssHeight);
+
+      if (labels.length === 0) {
+        ctx.fillStyle = "#a1887f";
+        ctx.font = "13px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("ไม่มีข้อมูล", cssWidth / 2, cssHeight / 2);
+        return;
+      }
+
+      const maxVal = Math.max(1, ...okData, ...ngData);
+      const labelWidth = 96;
+      const rightPad = 34;
+      const chartLeft = labelWidth;
+      const chartWidth = Math.max(20, cssWidth - labelWidth - rightPad);
+      const barHeight = 12;
+
+      labels.forEach((label, i) => {
+        const top = 10 + i * rowH;
+
+        ctx.fillStyle = "#654321";
+        ctx.font = "11px Arial";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        const shortLabel = label.length > 13 ? label.slice(0, 12) + "…" : label;
+        ctx.fillText(shortLabel, labelWidth - 8, top + rowH / 2);
+
+        const okW = (okData[i] / maxVal) * chartWidth;
+        ctx.fillStyle = "#2e7d32";
+        ctx.fillRect(chartLeft, top + 2, okW, barHeight);
+        ctx.fillStyle = "#654321";
+        ctx.textAlign = "left";
+        ctx.fillText(String(okData[i]), chartLeft + okW + 4, top + 2 + barHeight / 2);
+
+        const ngW = (ngData[i] / maxVal) * chartWidth;
+        ctx.fillStyle = "#c62828";
+        ctx.fillRect(chartLeft, top + 2 + barHeight + 3, ngW, barHeight);
+        ctx.fillStyle = "#654321";
+        ctx.textAlign = "left";
+        ctx.fillText(String(ngData[i]), chartLeft + ngW + 4, top + 2 + barHeight + 3 + barHeight / 2);
+      });
+
+      const legendY = cssHeight - 10;
+      ctx.textAlign = "left";
+      ctx.font = "11px Arial";
+      ctx.fillStyle = "#2e7d32";
+      ctx.fillRect(labelWidth, legendY - 6, 10, 10);
+      ctx.fillStyle = "#654321";
+      ctx.fillText("FG", labelWidth + 15, legendY);
+      ctx.fillStyle = "#c62828";
+      ctx.fillRect(labelWidth + 55, legendY - 6, 10, 10);
+      ctx.fillStyle = "#654321";
+      ctx.fillText("NG", labelWidth + 70, legendY);
+    }
+
+    function drawTimeTrendChart(canvasId, dates, okData, ngData, yieldData) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const cssWidth = Math.max(280, canvas.parentElement.clientWidth - 4);
+      const cssHeight = 260;
+      const ctx = setupCanvasSize(canvas, cssWidth, cssHeight);
+
+      if (dates.length === 0) {
+        ctx.fillStyle = "#a1887f";
+        ctx.font = "13px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("ไม่มีข้อมูล", cssWidth / 2, cssHeight / 2);
+        return;
+      }
+
+      const paddingLeft = 34;
+      const paddingRight = 40;
+      const paddingTop = 22;
+      const paddingBottom = 46;
+      const chartWidth = Math.max(20, cssWidth - paddingLeft - paddingRight);
+      const chartHeight = Math.max(20, cssHeight - paddingTop - paddingBottom);
+      const chartLeft = paddingLeft;
+      const chartTop = paddingTop;
+      const chartBottom = chartTop + chartHeight;
+
+      const maxCount = Math.max(1, ...okData, ...ngData);
+      const n = dates.length;
+      const slotWidth = chartWidth / n;
+      const barWidth = Math.max(2, Math.min(14, slotWidth * 0.32));
+
+      ctx.strokeStyle = "#f0e6d8";
+      ctx.lineWidth = 1;
+      ctx.font = "10px Arial";
+      const gridLines = 4;
+      for (let g = 0; g <= gridLines; g++) {
+        const y = chartTop + (chartHeight * g / gridLines);
+        ctx.beginPath();
+        ctx.moveTo(chartLeft, y);
+        ctx.lineTo(chartLeft + chartWidth, y);
+        ctx.stroke();
+        ctx.fillStyle = "#a1887f";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        const val = Math.round(maxCount * (1 - g / gridLines));
+        ctx.fillText(String(val), chartLeft - 6, y);
+      }
+
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      [0, 50, 100].forEach(pct => {
+        const y = chartBottom - (pct / 100) * chartHeight;
+        ctx.fillStyle = "#8b5a2b";
+        ctx.fillText(pct + "%", chartLeft + chartWidth + 6, y);
+      });
+
+      const showEveryLabel = n > 15 ? Math.ceil(n / 15) : 1;
+      dates.forEach((date, i) => {
+        const slotCenter = chartLeft + slotWidth * i + slotWidth / 2;
+        const okH = (okData[i] / maxCount) * chartHeight;
+        const ngH = (ngData[i] / maxCount) * chartHeight;
+
+        ctx.fillStyle = "#2e7d32";
+        ctx.fillRect(slotCenter - barWidth - 1, chartBottom - okH, barWidth, okH);
+
+        ctx.fillStyle = "#c62828";
+        ctx.fillRect(slotCenter + 1, chartBottom - ngH, barWidth, ngH);
+
+        if (i % showEveryLabel === 0 || i === n - 1) {
+          const shortLabel = date.slice(5);
+          ctx.save();
+          ctx.translate(slotCenter, chartBottom + 8);
+          ctx.rotate(-Math.PI / 4);
+          ctx.fillStyle = "#654321";
+          ctx.font = "10px Arial";
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+          ctx.fillText(shortLabel, 0, 0);
+          ctx.restore();
+        }
+      });
+
+      ctx.strokeStyle = "#4a3018";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      dates.forEach((date, i) => {
+        const slotCenter = chartLeft + slotWidth * i + slotWidth / 2;
+        const y = chartBottom - (yieldData[i] / 100) * chartHeight;
+        if (i === 0) ctx.moveTo(slotCenter, y);
+        else ctx.lineTo(slotCenter, y);
+      });
+      ctx.stroke();
+
+      ctx.fillStyle = "#4a3018";
+      dates.forEach((date, i) => {
+        const slotCenter = chartLeft + slotWidth * i + slotWidth / 2;
+        const y = chartBottom - (yieldData[i] / 100) * chartHeight;
+        ctx.beginPath();
+        ctx.arc(slotCenter, y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      const legendY = 8;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.font = "11px Arial";
+      ctx.fillStyle = "#2e7d32";
+      ctx.fillRect(chartLeft, legendY, 10, 10);
+      ctx.fillStyle = "#654321";
+      ctx.fillText("FG", chartLeft + 14, legendY + 5);
+
+      ctx.fillStyle = "#c62828";
+      ctx.fillRect(chartLeft + 50, legendY, 10, 10);
+      ctx.fillStyle = "#654321";
+      ctx.fillText("NG", chartLeft + 64, legendY + 5);
+
+      ctx.strokeStyle = "#4a3018";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(chartLeft + 100, legendY + 5);
+      ctx.lineTo(chartLeft + 118, legendY + 5);
+      ctx.stroke();
+      ctx.fillStyle = "#654321";
+      ctx.fillText("Yield %", chartLeft + 122, legendY + 5);
+    }
+
+    /* =========================================================
+       ส่วนที่ 4: สำรอง/กู้คืนข้อมูล
+       ========================================================= */
+    document.getElementById("btnDownloadBackup").addEventListener("click", function () {
+      window.location.href = "proxy.php?action=export_backup";
+    });
+
+    document.getElementById("btnRestoreBackup").addEventListener("click", async function () {
+      const fileInput = document.getElementById("restoreFileInput");
+      const statusEl = document.getElementById("restoreStatus");
+      const btn = this;
+      const file = fileInput.files[0];
+
+      if (!file) {
+        statusEl.innerHTML = `<span style="color:#c62828;">กรุณาเลือกไฟล์สำรอง (.zip) ก่อน</span>`;
+        return;
+      }
+
+      const confirmed = confirm(
+        "ยืนยันกู้คืนข้อมูลจากไฟล์นี้?\n\n" +
+        "ข้อมูล/รูปปัจจุบันที่ชื่อซ้ำกับในไฟล์สำรองจะถูกเขียนทับทันที และไม่สามารถย้อนกลับได้ " +
+        "ใช้เฉพาะกรณีข้อมูลบนเซิร์ฟเวอร์หายไปจริงๆ เท่านั้น"
+      );
+      if (!confirmed) return;
+
+      statusEl.textContent = "กำลังกู้คืนข้อมูล...";
+      btn.disabled = true;
+
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        const res = await fetch("proxy.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "import_backup", file: dataUrl })
+        });
+        const rawText = await res.text();
+        let data;
+        try {
+          data = JSON.parse(rawText);
+        } catch (e) {
+          throw new Error("เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON");
+        }
+        if (!res.ok || data.error) {
+          throw new Error(data.error || "กู้คืนไม่สำเร็จ");
+        }
+
+        statusEl.innerHTML = `<span style="color:#2e7d32;">✅ ${data.message || "กู้คืนข้อมูลเรียบร้อย"}</span><br><span style="font-size:12px; color:#8b5a2b;">แนะนำให้รีเฟรชหน้านี้ใหม่เพื่อโหลดข้อมูลที่กู้คืนแล้ว</span>`;
+        fileInput.value = "";
+      } catch (err) {
+        statusEl.innerHTML = `<span style="color:#c62828;">❌ ${err.message}</span>`;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    /* =========================================================
+       เริ่มต้นระบบ: เปิดหน้าสแกนชิ้นงานเป็นค่าเริ่มต้น
+       เหมาะสำหรับการใช้งานบน iPad ที่โต๊ะตรวจสอบ
+       ========================================================= */
+    showView('scan');
+  </script>
+
+</body>
+</html>
